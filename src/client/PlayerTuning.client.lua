@@ -6,7 +6,11 @@ local UserInputService = game:GetService("UserInputService")
 -- REFERENCIAS
 local player = Players.LocalPlayer
 local character = script.Parent
-local humanoid = character:WaitForChild("Humanoid")
+local humanoid = character:FindFirstChild("Humanoid")
+while not humanoid do
+	humanoid = character:FindFirstChild("Humanoid")
+	task.wait(0.1)
+end	
 local hrp = character:WaitForChild("HumanoidRootPart")
 local camera = workspace.CurrentCamera
 
