@@ -9,6 +9,7 @@ local CameraController = require(CoreModules:WaitForChild("CameraController"))
 local MovementController = require(CoreModules:WaitForChild("MovementController"))
 local StaminaService = require(CoreModules:WaitForChild("StaminaService"))
 local FlashlightService = require(CoreModules:WaitForChild("FlashlightService"))
+local InteractionService = require(CoreModules:WaitForChild("InteractionService"))
 
 -- REFERENCIAS
 local player = Players.LocalPlayer
@@ -21,8 +22,9 @@ humanoid.WalkSpeed = 0
 humanoid.JumpPower = 0
 humanoid.AutoRotate = false
 humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
-
 FlashlightService:Init(character) -- Linterna en el pecho
+InteractionService:Init()
+
 
 -- ESTADO DEL INPUT
 local moveInput = 0
@@ -48,7 +50,7 @@ end)
 
 UserInputService.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement then
-        CameraController:ProcessMouseMovement(input.Delta.X)
+        CameraController:ProcessMouseMovement(input.Delta.X, input.Delta.Y)
     end
 end)
 
