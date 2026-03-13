@@ -1,20 +1,24 @@
 -- Archivo: src/server/InteractionHandler.server.lua
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
+local ModuleScripts = script.Parent:WaitForChild("ModuleScripts")
+local PlayerStateManager = require(ModuleScripts:WaitForChild("PlayerStateManager"))
+
 print("[BACKEND] Motor de Interacciones del Servidor Iniciado")
 
 -- El servidor también escucha los ProximityPrompts, pero aquí ejecutamos la lógica real
 ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
-    local actionType = prompt.Name 
-    
-    if actionType == "Puerta" then
-        -- Aquí programaremos la rotación de la bisagra para que todos vean la puerta abrirse
-        print("[SERVIDOR] " .. player.Name .. " interactuó con una puerta.")
-        
-    elseif actionType == "Revivir" then
-        -- Aquí validaremos quién está en el suelo y le restauraremos la vida
-        print("[SERVIDOR] " .. player.Name .. " completó la acción de revivir.")
-        
+    local actionType = prompt.Name
+
+    if actionType == "Revivir" then
+        -- El prompt está anclado al HumanoidRootPart del jugador caído
+        local targetCharacter = prompt.Parent.Parent
+        local targetPlayer = game:GetService("Players"):GetPlayerFromCharacter(targetCharacter)
+        if targetPlayer and targetPlayer.UserId ~= player.UserId then
+            -- Cambiamos el estado de la persona caída a "Sano"
+            PlayerStateManager:SetState(targetPlayer, "Sano")
+            print("[SERVIDOR] " .. player.Name .. " salvó a " .. targetPlayer.Name)
+        end
     elseif actionType == "Item" then
         -- Lógica para añadir a un inventario global o dar una herramienta
         print("[SERVIDOR] " .. player.Name .. " recogió " .. prompt.ObjectText)

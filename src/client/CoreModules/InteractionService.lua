@@ -2,6 +2,15 @@ local InteractionService = {}
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
 function InteractionService:Init()
+    local player = game.Players.LocalPlayer
+    -- ¡NUEVO! Escuchar cuando un prompt está a punto de aparecer en pantalla
+    ProximityPromptService.PromptShown:Connect(function(prompt, inputType)
+        -- Si es el prompt de revivir, y está pegado a MI personaje...
+        if prompt.Name == "Revivir" and prompt.Parent and prompt.Parent.Parent == player.Character then
+            -- Lo apagamos localmente. Los demás sí lo verán, tú no.
+            prompt.Enabled = false 
+        end
+    end)
     ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
         local actionType = prompt.Name 
         

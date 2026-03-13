@@ -9,6 +9,12 @@ local BODY_TURN_SPEED = 0.12
 local currentSpeed = 0
 
 function MovementController:Update(dt, hrp, moveInput, strafeInput, isRunning, canRun, cameraYaw)
+    -- Leemos la maquina de estados del Servidor de revivir 
+    local estadoActual = hrp.Parent:GetAttribute("Estado") or "Sano"
+    if estadoActual == "Abatido" then
+        hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y,0)
+        return
+    end
     -- Rotación relativa a la cámara
     local camRotation = CFrame.Angles(0, cameraYaw, 0)
     local forward = Vector3.new(camRotation.LookVector.X, 0, camRotation.LookVector.Z).Unit
