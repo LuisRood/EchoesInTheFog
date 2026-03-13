@@ -77,6 +77,26 @@ function PlayerStateManager:TakeDamage(player, amount)
         self:SetState(player, "Abatido")
     end
 end
+
+function PlayerStateManager:Heal(player, amount)
+    local character = player.Character
+    if not character then return end
+
+    local estadoActual = self:GetState(player)
+    
+    -- No puedes curarte si ya estás en el suelo abatida
+    if estadoActual == "Abatido" then return end
+
+    local vidaActual = character:GetAttribute("VidaActual") or 100
+    local vidaMaxima = character:GetAttribute("VidaMaxima") or 100
+    
+    -- math.clamp asegura que la vida no suba de 100
+    vidaActual = math.clamp(vidaActual + amount, 0, vidaMaxima)
+    character:SetAttribute("VidaActual", vidaActual)
+
+    print("[SISTEMA] " .. player.Name .. " usó un botiquín. Vida actual: " .. vidaActual)
+end
+
 -- ==========================================
 -- INICIALIZACIÓN (Constructor de Estados)
 -- ==========================================

@@ -15,6 +15,24 @@ function MovementController:Update(dt, hrp, moveInput, strafeInput, isRunning, c
         hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y,0)
         return
     end
+
+    -- ==========================================
+    -- ¡NUEVO! PENALIZACIÓN POR HERIDAS CRÍTICAS
+    -- ==========================================
+    local vidaActual = hrp.Parent:GetAttribute("VidaActual") or 100
+    local estaMalHerida = vidaActual <= 30
+    
+    -- Definimos las velocidades base (ajusta los números a los que ya tenías)
+    local velocidadCaminar = WALK_SPEED
+    local velocidadCorrer = RUN_SPEED
+
+    -- Si la vida es 30 o menos, cortamos la velocidad a la mitad
+    if estaMalHerida then
+        velocidadCaminar = velocidadCaminar * 0.5
+        velocidadCorrer = velocidadCorrer * 0.5
+        -- Opcional: Podríamos hacer que aquí la pantalla palpite rojo después
+    end
+
     -- Rotación relativa a la cámara
     local camRotation = CFrame.Angles(0, cameraYaw, 0)
     local forward = Vector3.new(camRotation.LookVector.X, 0, camRotation.LookVector.Z).Unit
@@ -32,9 +50,9 @@ function MovementController:Update(dt, hrp, moveInput, strafeInput, isRunning, c
     local targetSpeed = 0
     if isMoving then
         if isRunning and canRun then
-            targetSpeed = RUN_SPEED
+            targetSpeed = velocidadCorrer
         else
-            targetSpeed = WALK_SPEED
+            targetSpeed = velocidadCaminar
         end
     end
 

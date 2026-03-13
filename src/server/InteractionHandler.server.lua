@@ -72,7 +72,17 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
             modeloPuerta:SetAttribute("EstaAbierta", not estaAbierta)
             prompt.ActionText = estaAbierta and "Abrir" or "Cerrar"
             prompt.Enabled = true
-        end  
+        end
+    --Botequines
+    elseif actionType == "Botiquin" then
+        -- 1. Curamos al jugador (le damos 50 puntos de vida)
+        PlayerStateManager:Heal(player, 50)
+        
+        -- 2. Imprimimos el log y destruimos el objeto físico para que nadie más lo use
+        print("[SERVIDOR] " .. player.Name .. " recogió un Botiquín de Primeros Auxilios.")
+        if prompt.Parent then prompt.Parent:Destroy() 
+    end
+    --Items    
     elseif actionType == "Item" then
         -- Lógica para añadir a un inventario global o dar una herramienta
         print("[SERVIDOR] " .. player.Name .. " recogió " .. prompt.ObjectText)
