@@ -1,9 +1,9 @@
 local MovementController = {}
 
 local WALK_SPEED = 10
-local RUN_SPEED = 16
-local ACCELERATION = 18
-local DECELERATION = 22
+local RUN_SPEED = 22
+local ACCELERATION = 24
+local DECELERATION = 28
 local BODY_TURN_SPEED = 0.12
 
 local currentSpeed = 0

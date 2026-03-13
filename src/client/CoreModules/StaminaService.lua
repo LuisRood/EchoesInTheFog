@@ -3,8 +3,8 @@ local StaminaService = {};
 --private variables (Encapsulamiento)
 local MAX_STAMINA = 100
 local currentStamina = MAX_STAMINA
-local STAMINA_DRAIN_RATE = 20
-local STAMINA_REGEN_RATE = 10
+local STAMINA_DRAIN_RATE = 10
+local STAMINA_REGEN_RATE = 5
 local EXHAUSTION_LIMIT = 30
 local isExhausted = false
 
