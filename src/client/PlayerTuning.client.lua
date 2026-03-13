@@ -10,6 +10,7 @@ local MovementController = require(CoreModules:WaitForChild("MovementController"
 local StaminaService = require(CoreModules:WaitForChild("StaminaService"))
 local FlashlightService = require(CoreModules:WaitForChild("FlashlightService"))
 local InteractionService = require(CoreModules:WaitForChild("InteractionService"))
+local RadioService = require(CoreModules:WaitForChild("RadioService"))
 
 -- REFERENCIAS
 local player = Players.LocalPlayer
@@ -24,6 +25,7 @@ humanoid.AutoRotate = false
 humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
 FlashlightService:Init(character) -- Linterna en el pecho
 InteractionService:Init()
+RadioService:Init(character)
 
 
 -- ESTADO DEL INPUT
@@ -69,4 +71,5 @@ RunService.RenderStepped:Connect(function(dt)
     -- 3. Actualizar Render de Cámara
     CameraController:Update(hrp.Position)
 	FlashlightService:Update(dt)
+    RadioService:Update(hrp.Position)
 end)
