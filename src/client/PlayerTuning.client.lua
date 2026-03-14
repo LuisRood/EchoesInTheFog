@@ -11,6 +11,7 @@ local StaminaService = require(CoreModules:WaitForChild("StaminaService"))
 local FlashlightService = require(CoreModules:WaitForChild("FlashlightService"))
 local InteractionService = require(CoreModules:WaitForChild("InteractionService"))
 local RadioService = require(CoreModules:WaitForChild("RadioService"))
+local UIController = require(CoreModules:WaitForChild("UIController"))
 
 -- REFERENCIAS
 local player = Players.LocalPlayer
@@ -26,6 +27,7 @@ humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
 FlashlightService:Init(character) -- Linterna en el pecho
 InteractionService:Init()
 RadioService:Init(character)
+UIController:Init(character)
 
 
 -- ESTADO DEL INPUT
