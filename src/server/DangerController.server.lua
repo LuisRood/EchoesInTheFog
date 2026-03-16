@@ -52,6 +52,18 @@ end
 -- Conectamos el sistema de ataque a todos los monstruos de la carpeta
 for _, monstruo in ipairs(carpetaPeligros:GetChildren()) do
     if monstruo:IsA("Model") and monstruo:FindFirstChild("HumanoidRootPart") then
+        local rootPart = monstruo.HumanoidRootPart
+        
+        -- 1. Guardamos su coordenada original en memoria
+        monstruo:SetAttribute("PosicionOrigen", rootPart.Position)
+        
+        -- 2. ¡CRÍTICO PARA LA IA! Forzamos que el Servidor sea el dueño absoluto de las físicas
+        -- Esto evita que el monstruo se "congele" o entre en hibernación al teletransportarte
+        for _, part in ipairs(monstruo:GetDescendants()) do
+            if part:IsA("BasePart") and part:CanSetNetworkOwnership() then
+                part:SetNetworkOwner(nil)
+            end
+        end
         inicializarAtaque(monstruo)
     end
 end
@@ -79,22 +91,47 @@ RunService.Heartbeat:Connect(function(dt)
                 if character and character:FindFirstChild("HumanoidRootPart") then
                     local hrp = character.HumanoidRootPart
                     local distancia = (hrp.Position - rootPart.Position).Magnitude
-                    
-                    if distancia < distanciaMinima then
-                        -- Solo persigue si el jugador NO está abatido (Opcional: para que vaya por los vivos)
-                        if PlayerStateManager:GetState(player) == "Sano" then
-                            distanciaMinima = distancia
-                            objetivoHRP = hrp
+                    -- ==========================================
+                    -- ¡EL FIX! Ignorar a los jugadores abatidos
+                    -- ==========================================
+                    local estadoJugador = character:GetAttribute("Estado") or "Sano"
+
+                    if estadoJugador ~= "Abatido" then
+                        if distancia < distanciaMinima then
+                            -- Solo persigue si el jugador NO está abatido (Opcional: para que vaya por los vivos)
+                            if PlayerStateManager:GetState(player) == "Sano" then
+                                distanciaMinima = distancia
+                                objetivoHRP = hrp
+                            end
                         end
                     end
                 end
             end
 
+            -- Evaluamos qué hacer con el objetivo
             if objetivoHRP then
+                -- MODO PERSECUCIÓN
                 humanoid.WalkSpeed = 12 
                 humanoid:MoveTo(objetivoHRP.Position)
+                -- print("[IA] Te veo. ¡Voy por ti!") -- Descomenta si necesitas depurar
             else
-                humanoid.WalkSpeed = 0
+                -- MODO PATRULLA / REGRESO
+                humanoid.WalkSpeed = 8 
+                local origen = monstruo:GetAttribute("PosicionOrigen")
+                
+                if origen then
+                    -- Calculamos qué tan lejos está de su casa
+                    local distanciaAlOrigen = (rootPart.Position - origen).Magnitude
+                    
+                    -- Solo le damos la orden de caminar si está a más de 5 metros de su origen.
+                    -- Si ya llegó (distancia < 5), lo dejamos en paz para no romper el Humanoid.
+                    if distanciaAlOrigen > 5 then
+                        humanoid:MoveTo(origen)
+                    else
+                        -- Ya llegó a su casa, detenemos sus piernas por completo
+                        humanoid.WalkSpeed = 0
+                    end
+                end
             end
         end
     end

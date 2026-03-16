@@ -14,8 +14,10 @@ function PlayerStateManager:EjecutarRespawn(player)
     local rootPart = character:FindFirstChild("HumanoidRootPart")
     
     -- 1. Restauramos sus estadísticas al 100%
-    character:SetAttribute("Estado", "Sano")
     character:SetAttribute("VidaActual", character:GetAttribute("VidaMaxima") or 100)
+
+    -- Sincronizamos el estado lógico y visual para que la IA vuelva a detectarlo.
+    self:SetState(player, "Sano")
     
     -- 2. Buscamos si pisó un checkpoint antes. Si no, lo mandamos al origen (0,5,0)
     local ultimoCheckpoint = character:GetAttribute("UltimoCheckpoint")
