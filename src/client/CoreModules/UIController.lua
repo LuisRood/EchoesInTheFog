@@ -1,6 +1,7 @@
 local UIController = {}
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage") 
 
 function UIController:Init(character)
     local player = Players.LocalPlayer
@@ -12,6 +13,36 @@ function UIController:Init(character)
 
     -- Variable para controlar qué tan rápido oscila la matemática
     local velocidadParpadeo = 0
+
+    -- ==========================================
+    -- REFERENCIAS AL SISTEMA DE NOTAS
+    -- ==========================================
+    local panelNota = hud:WaitForChild("PanelNota")
+    local textoLore = panelNota:WaitForChild("TextoLore")
+    local botonCerrar = panelNota:WaitForChild("BotonCerrar")
+    local eventoMostrarNota = ReplicatedStorage:WaitForChild("EventoMostrarNota")
+
+    -- ==========================================
+    -- LISTENER DEL SERVIDOR (Atrapa el texto)
+    -- ==========================================
+    eventoMostrarNota.OnClientEvent:Connect(function(textoRecibido)
+        -- 1. Inyectamos el texto en la etiqueta
+        textoLore.Text = textoRecibido
+        
+        -- 2. Hacemos visible el papel en la pantalla
+        panelNota.Visible = true
+        
+        -- Opcional: Podrías reproducir un sonido de "hoja de papel" aquí
+        print("[CLIENTE] Leyendo nota...")
+    end)
+
+    -- ==========================================
+    -- LÓGICA DEL BOTÓN CERRAR
+    -- ==========================================
+    botonCerrar.MouseButton1Click:Connect(function()
+        panelNota.Visible = false
+        print("[CLIENTE] Nota cerrada.")
+    end)
 
     -- Función que evalúa la vida y cambia la UI
     local function actualizarVisor()

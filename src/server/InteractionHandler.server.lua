@@ -5,6 +5,8 @@ local ModuleScripts = script.Parent:WaitForChild("ModuleScripts")
 local TweenService = game:GetService("TweenService")
 local PlayerStateManager = require(ModuleScripts:WaitForChild("PlayerStateManager"))
 local InventoryManager = require(ModuleScripts:WaitForChild("InventoryManager"))
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local EventShowNotes = ReplicatedStorage:WaitForChild("EventoMostrarNota")
 
 print("[BACKEND] Motor de Interacciones del Servidor Iniciado")
 
@@ -118,6 +120,21 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
             prompt.ActionText = estaAbierta and "Abrir" or "Cerrar"
             prompt.Enabled = true
         end
+    -- ==========================================
+    -- NUEVO: SISTEMA DE NOTAS Y LORE
+    -- ==========================================
+    elseif actionType == "LeerNota" then
+        -- Extraemos el texto que escribiste en las propiedades del objeto físico
+        local textoDeLaNota = prompt.Parent:GetAttribute("TextoLore")
+        
+        if textoDeLaNota then
+            print("[SERVIDOR] Enviando nota a la pantalla de " .. player.Name)
+            
+            -- ¡LA MAGIA! Disparamos el evento a través del puente, solo hacia este jugador
+            EventShowNotes:FireClient(player, textoDeLaNota)
+        else
+            print("ERROR: Esta nota no tiene el atributo 'TextoLore'")
+        end    
     --Botequines
     elseif actionType == "Botiquin" then
         -- 1. Curamos al jugador (le damos 50 puntos de vida)
