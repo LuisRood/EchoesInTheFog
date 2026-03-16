@@ -32,9 +32,19 @@ function RadioService:Update(hrpPosition)
     -- Escaneamos todos los objetos dentro de la carpeta Peligros
     for _, peligro in ipairs(carpetaPeligros:GetChildren()) do
         if peligro:IsA("BasePart") or peligro:IsA("Model") then
-            
-            -- Si es un modelo (como un NPC), buscamos su centro
-            local posicionPeligro = peligro:IsA("Model") and peligro.PrimaryPart.Position or peligro.Position
+            local posicionPeligro
+
+            -- Si es un modelo (como un NPC), buscamos un pivote seguro
+            if peligro:IsA("Model") then
+                local referencia = peligro.PrimaryPart or peligro:FindFirstChild("HumanoidRootPart")
+                if referencia and referencia:IsA("BasePart") then
+                    posicionPeligro = referencia.Position
+                else
+                    posicionPeligro = peligro:GetPivot().Position
+                end
+            else
+                posicionPeligro = peligro.Position
+            end
             
             -- Calculamos la distancia vectorial exacta
             local distancia = (posicionPeligro - hrpPosition).Magnitude

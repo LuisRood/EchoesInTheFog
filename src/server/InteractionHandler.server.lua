@@ -15,7 +15,10 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
     local actionType = prompt.Name
 
     if actionType == "Revivir" then
-        local targetCharacter = prompt.Parent.Parent
+        local promptParent = prompt.Parent
+        local targetCharacter = promptParent and promptParent.Parent
+        if not targetCharacter or not targetCharacter:IsA("Model") then return end
+
         local targetPlayer = game:GetService("Players"):GetPlayerFromCharacter(targetCharacter)
         
         if targetPlayer then

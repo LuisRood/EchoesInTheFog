@@ -15,7 +15,7 @@ function InteractionService:Init()
         local actionType = prompt.Name 
         
         -- El cliente SOLO se encarga de UI y efectos locales
-        if actionType == "Nota" then
+        if actionType == "LeerNota" then
             print("[CLIENTE] Abriendo el UI para leer: " .. prompt.ObjectText)
             -- TODO: Mostrar GUI de papel en la pantalla de Mabel
         end

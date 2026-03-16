@@ -1,8 +1,41 @@
 local PlayerStateManager = {}
+local Players = game:GetService("Players")
 
 -- Diccionario en memoria para rastrear a cada jugador
 local playerStates = {}
 
+-- ==========================================
+-- NUEVO: LÓGICA DE TELETRANSPORTE (CHECKPOINT)
+-- ==========================================
+function PlayerStateManager:EjecutarRespawn(player)
+    local character = player.Character
+    if not character then return end
+    
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    
+    -- 1. Restauramos sus estadísticas al 100%
+    character:SetAttribute("Estado", "Sano")
+    character:SetAttribute("VidaActual", character:GetAttribute("VidaMaxima") or 100)
+    
+    -- 2. Buscamos si pisó un checkpoint antes. Si no, lo mandamos al origen (0,5,0)
+    local ultimoCheckpoint = character:GetAttribute("UltimoCheckpoint")
+    
+    if rootPart then
+        if ultimoCheckpoint then
+            -- Lo teletransportamos a la coordenada guardada
+            rootPart.CFrame = ultimoCheckpoint
+            print("[SISTEMA] " .. player.Name .. " reapareció en su último Checkpoint.")
+        else
+            -- Coordenada de emergencia por si muere al principio del nivel
+            rootPart.CFrame = CFrame.new(0, 5, 0) 
+            print("[SISTEMA] " .. player.Name .. " reapareció en el inicio del mapa.")
+        end
+    end
+end
+
+-- ==========================================
+-- TU FUNCIÓN SET STATE ACTUALIZADA
+-- ==========================================
 function PlayerStateManager:SetState(player, newState)
     playerStates[player.UserId] = newState
     
@@ -16,6 +49,10 @@ function PlayerStateManager:SetState(player, newState)
     
     if newState == "Abatido" then
         print("[ESTADO] " .. player.Name .. " ha caído abatida.")
+
+        if hrp and hrp:FindFirstChild("Revivir") then
+            return
+        end
         
         -- Generamos el ProximityPrompt dinámicamente en el servidor
         local prompt = Instance.new("ProximityPrompt")
@@ -26,10 +63,30 @@ function PlayerStateManager:SetState(player, newState)
         prompt.RequiresLineOfSight = false
         prompt.Parent = hrp
         
+        -- ==========================================
+        -- ¡NUEVO! TEMPORIZADOR DE DESANGRADO
+        -- ==========================================
+        local tiempoLimite = 30 -- 30 segundos para ser revivida
+        print("[ALERTA] Tienen " .. tiempoLimite .. " segundos para salvar a " .. player.Name)
+        
+        task.delay(tiempoLimite, function()
+            -- Si después de 30 segundos SIGUE abatida, ejecutamos el Respawn
+            if character and character:GetAttribute("Estado") == "Abatido" then
+                print("[SISTEMA] Se acabó el tiempo. " .. player.Name .. " no resistió.")
+                self:EjecutarRespawn(player)
+            end
+        end)
+        
     elseif newState == "Sano" then
         print("[ESTADO] " .. player.Name .. " está de pie.")
         
-        character:SetAttribute("VidaActual", 30)
+        -- Validamos: Si un amigo la levanta (vida 0), le damos 30. 
+        -- Si viene del Respawn (vida 100), no se la bajamos a 30.
+        local vidaActual = character:GetAttribute("VidaActual") or 0
+        if vidaActual < 30 then
+            character:SetAttribute("VidaActual", 30)
+        end
+
         -- Limpiamos el prompt si existe
         if hrp then
             local prompt = hrp:FindFirstChild("Revivir")
@@ -46,7 +103,6 @@ function PlayerStateManager:SetState(player, newState)
                 print("[ESTADO] " .. player.Name .. " ya es vulnerable de nuevo.")
             end
         end)
-        -- Aquí más adelante restauraremos la vida (Health)
     end
 end
 
@@ -128,10 +184,15 @@ local function inicializarJugador(player)
 end
 
 -- Escuchar a los jugadores que entren en el futuro
-game.Players.PlayerAdded:Connect(inicializarJugador)
+Players.PlayerAdded:Connect(inicializarJugador)
+
+-- Limpiar estados huérfanos cuando el jugador sale
+Players.PlayerRemoving:Connect(function(player)
+    playerStates[player.UserId] = nil
+end)
 
 -- Ejecutar para los jugadores que YA están adentro al arrancar el servidor
-for _, player in ipairs(game.Players:GetPlayers()) do
+for _, player in ipairs(Players:GetPlayers()) do
     inicializarJugador(player)
 end
 

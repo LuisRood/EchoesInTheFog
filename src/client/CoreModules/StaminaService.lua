@@ -30,7 +30,7 @@ function StaminaService:CanRun()
 end
 
 function StaminaService:GetStamina()
-    return
+    return currentStamina
 end
 
 return StaminaService

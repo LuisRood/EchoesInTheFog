@@ -8,6 +8,8 @@ local PlayerStateManager = require(ModuleScripts:WaitForChild("PlayerStateManage
 
 local carpetaPeligros = workspace:WaitForChild("Peligros")
 local RANGO_VISION = 100 
+local AI_UPDATE_INTERVAL = 0.15
+local aiAccumulator = 0
 
 -- ==========================================
 -- SISTEMA DE ATAQUE (Colisión)
@@ -57,7 +59,13 @@ end
 -- ==========================================
 -- SISTEMA DE NAVEGACIÓN (Persecución)
 -- ==========================================
-RunService.Heartbeat:Connect(function()
+RunService.Heartbeat:Connect(function(dt)
+    aiAccumulator += dt
+    if aiAccumulator < AI_UPDATE_INTERVAL then
+        return
+    end
+    aiAccumulator = 0
+
     for _, monstruo in ipairs(carpetaPeligros:GetChildren()) do
         local humanoid = monstruo:FindFirstChild("Humanoid")
         local rootPart = monstruo:FindFirstChild("HumanoidRootPart")
