@@ -22,6 +22,33 @@ function UIController:Init(character)
     local botonCerrar = panelNota:WaitForChild("BotonCerrar")
     local eventoMostrarNota = ReplicatedStorage:WaitForChild("EventoMostrarNota")
 
+    local TweenService = game:GetService("TweenService")
+    local eventoFinJuego = ReplicatedStorage:WaitForChild("EventoFinJuego")
+    local pantallaFinal = hud:WaitForChild("PantallaFinal")
+    local textoFin = pantallaFinal:WaitForChild("TextoFin")
+
+    -- ==========================================
+    -- LISTENER: SECUENCIA DE FIN DE JUEGO
+    -- ==========================================
+    eventoFinJuego.OnClientEvent:Connect(function()
+        print("[CLIENTE] Ejecutando cinemática final...")
+        
+        pantallaFinal.Visible = true
+        -- Creamos una animación lineal que dure 4 segundos
+        local infoFade = TweenInfo.new(4, Enum.EasingStyle.Linear)
+        
+        -- Animamos la transparencia del fondo y del texto hacia 0 (totalmente visibles)
+        local animarFondo = TweenService:Create(pantallaFinal, infoFade, {BackgroundTransparency = 0})
+        local animarTexto = TweenService:Create(textoFin, infoFade, {TextTransparency = 0})
+        
+        animarFondo:Play()
+        animarTexto:Play()
+        
+        -- Esperamos a que la pantalla esté totalmente negra
+        task.wait(4) -- Tiempo exacto que tarda la pantalla en ponerse negra
+        task.wait(2) -- Tiempo extra para que el jugador alcance a leer el texto
+        -- Cortamos la conexión del jugador. ¡MVP Completado!
+    end)
     -- ==========================================
     -- LISTENER DEL SERVIDOR (Atrapa el texto)
     -- ==========================================
