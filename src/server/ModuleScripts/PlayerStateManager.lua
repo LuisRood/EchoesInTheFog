@@ -71,9 +71,39 @@ function PlayerStateManager:SetState(player, newState)
         local tiempoLimite = 30 -- 30 segundos para ser revivida
         print("[ALERTA] Tienen " .. tiempoLimite .. " segundos para salvar a " .. player.Name)
         
-        task.delay(tiempoLimite, function()
-            -- Si después de 30 segundos SIGUE abatida, ejecutamos el Respawn
-            if character and character:GetAttribute("Estado") == "Abatido" then
+        -- 1. Creamos la UI flotante dinámicamente en el servidor
+        local cartelFlotante = Instance.new("BillboardGui")
+        cartelFlotante.Name = "RelojDesangrado"
+        cartelFlotante.Size = UDim2.new(0, 100, 0, 50)
+        cartelFlotante.StudsOffset = Vector3.new(0, 3, 0) -- Flota 3 metros sobre el cuerpo
+        cartelFlotante.AlwaysOnTop = true -- Se ve a través de las paredes
+        cartelFlotante.Parent = hrp
+
+        local textoReloj = Instance.new("TextLabel")
+        textoReloj.Size = UDim2.new(1, 0, 1, 0)
+        textoReloj.BackgroundTransparency = 1
+        textoReloj.TextColor3 = Color3.new(1, 0.2, 0.2) -- Rojo sangre
+        textoReloj.TextScaled = true
+        textoReloj.Font = Enum.Font.Creepster
+        textoReloj.Text = tostring(tiempoLimite)
+        textoReloj.Parent = cartelFlotante
+
+        -- 2. Creamos un hilo paralelo para la cuenta regresiva visual
+        task.spawn(function()
+            local tiempoRestante = tiempoLimite
+
+            -- Mientras siga abatida y el tiempo sea mayor a 0...
+            while tiempoRestante > 0 and character and character:GetAttribute("Estado") == "Abatido" do
+                task.wait(1)
+                tiempoRestante -= 1
+                textoReloj.Text = tostring(tiempoRestante)
+            end
+
+            -- Si el bucle termina, limpiamos la UI flotante
+            if cartelFlotante then cartelFlotante:Destroy() end
+
+            -- Si el tiempo llegó a 0 y SIGUE abatida, ejecutamos el castigo
+            if tiempoRestante <= 0 and character and character:GetAttribute("Estado") == "Abatido" then
                 print("[SISTEMA] Se acabó el tiempo. " .. player.Name .. " no resistió.")
                 self:EjecutarRespawn(player)
             end

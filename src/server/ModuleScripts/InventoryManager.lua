@@ -82,12 +82,36 @@ function InventoryManager:RemoveItem(player, itemName, amount)
     local currentAmount = inventory[itemName] or 0
     
     if currentAmount >= amount then
-        inventory[itemName] = currentAmount - amount
-        print("[INVENTARIO] " .. player.Name .. " usó " .. amount .. " " .. itemName .. ". Restantes: " .. inventory[itemName])
+        local nuevoTotal = currentAmount - amount
+
+        -- Si llega a cero, eliminamos la clave para evitar "x0" en UI.
+        if nuevoTotal <= 0 then
+            inventory[itemName] = nil
+        else
+            inventory[itemName] = nuevoTotal
+        end
+
+        print("[INVENTARIO] " .. player.Name .. " usó " .. amount .. " " .. itemName .. ". Restantes: " .. tostring(inventory[itemName] or 0))
         return true
     end
     
     return false
+end
+-- ==========================================
+-- OBTENER INVENTARIO (Endpoint para el Cliente)
+-- ==========================================
+function InventoryManager:GetInventory(player)
+    local inventory = playerInventories[player.UserId] or {}
+    local limpio = {}
+
+    -- Mandamos al cliente solo entradas con cantidad positiva.
+    for itemName, cantidad in pairs(inventory) do
+        if cantidad and cantidad > 0 then
+            limpio[itemName] = cantidad
+        end
+    end
+
+    return limpio
 end
 
 return InventoryManager

@@ -8,7 +8,15 @@ local InventoryManager = require(ModuleScripts:WaitForChild("InventoryManager"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local EventShowNotes = ReplicatedStorage:WaitForChild("EventoMostrarNota")
 local EventEndGame = ReplicatedStorage:WaitForChild("EventoFinJuego")
+-- ¡NUEVO! Creamos el "Endpoint" del inventario
+local FuncObtenerInventario = Instance.new("RemoteFunction")
+FuncObtenerInventario.Name = "ObtenerInventario"
+FuncObtenerInventario.Parent = ReplicatedStorage
 
+-- Le decimos al servidor qué hacer cuando un cliente llame a esta función
+FuncObtenerInventario.OnServerInvoke = function(player)
+    return InventoryManager:GetInventory(player)
+end
 print("[BACKEND] Motor de Interacciones del Servidor Iniciado")
 
 -- ==========================================
@@ -135,7 +143,11 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
             else
                 -- ¡Tiene la llave! Desbloqueamos la puerta permanentemente
                 print("[SISTEMA] Puerta desbloqueada con: " .. requiereLlave)
-                
+
+                -- ==========================================
+                -- ¡EL FIX! Descontamos la llave del inventario
+                -- ==========================================
+                InventoryManager:RemoveItem(player, requiereLlave, 1)
                 -- Reproducimos el audio de éxito
                 local sonidoDesbloqueo = panel:FindFirstChild("SonidoDesbloqueo")
                 if sonidoDesbloqueo then sonidoDesbloqueo:Play() end
@@ -230,7 +242,7 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
         local objetoFisico = prompt.Parent
         local nombreObjeto = objetoFisico:GetAttribute("NombreItem")
         local descripcionObjeto = objetoFisico:GetAttribute("DescripcionItem")
-        
+
         if nombreObjeto then
             -- Intentamos meterlo a la mochila
             local sePudoRecoger = InventoryManager:AddItem(player, nombreObjeto, 1)
