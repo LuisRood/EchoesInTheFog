@@ -104,17 +104,7 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
             prompt:Destroy() -- Quitamos el prompt porque ya lo salvamos
             print("[SERVIDOR] " .. player.Name .. " salvó a un Compañero NPC.")
         end
-    -- ==========================================
-    -- NUEVO: RECOGER OBJETOS (Llaves, Munición, etc.)
-    -- ==========================================
-    elseif actionType == "RecogerObjeto" then
-        -- Leemos el nombre del item desde un Atributo del objeto físico
-        local nombreObjeto = prompt.Parent:GetAttribute("NombreItem")
-        
-        if nombreObjeto then
-            InventoryManager:AddItem(player, nombreObjeto, 1)
-            prompt.Parent:Destroy() -- El objeto desaparece del mapa
-        end    
+    
     -- ==========================================
     -- ¡NUEVA LÓGICA DE PUERTAS TIPO SILENT HILL!
     -- ==========================================
@@ -233,6 +223,27 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
         if prompt.Parent then
             prompt.Parent:Destroy()
         end 
+    -- ==========================================
+    -- RECOGER OBJETOS (Llaves, Munición, etc.)
+    -- ==========================================
+    elseif actionType == "RecogerObjeto" then
+        local objetoFisico = prompt.Parent
+        local nombreObjeto = objetoFisico:GetAttribute("NombreItem")
+        local descripcionObjeto = objetoFisico:GetAttribute("DescripcionItem")
+        
+        if nombreObjeto then
+            -- Intentamos meterlo a la mochila
+            local sePudoRecoger = InventoryManager:AddItem(player, nombreObjeto, 1)
+            
+            if sePudoRecoger then
+                -- Solo si entró a la mochila, lo borramos del mapa
+                objetoFisico:Destroy() 
+            else
+                -- Si no cupo, se queda en el suelo y apagamos el prompt un ratito para no spamear
+                prompt.Enabled = false
+                task.delay(1.5, function() prompt.Enabled = true end)
+            end
+        end    
     -- ==========================================
     -- OBJETOS GENÉRICOS DEL MAPA
     -- ==========================================
