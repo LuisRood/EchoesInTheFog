@@ -1,7 +1,6 @@
 -- SERVICIOS DE ROBLOX
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 
 -- INYECCIÓN DE DEPENDENCIAS (Módulos)
 local CoreModules = script.Parent:WaitForChild("CoreModules")
@@ -12,6 +11,7 @@ local FlashlightService = require(CoreModules:WaitForChild("FlashlightService"))
 local InteractionService = require(CoreModules:WaitForChild("InteractionService"))
 local RadioService = require(CoreModules:WaitForChild("RadioService"))
 local UIController = require(CoreModules:WaitForChild("UIController"))
+local InputController = require(CoreModules:WaitForChild("InputController"))
 
 -- REFERENCIAS
 local player = Players.LocalPlayer
@@ -29,37 +29,18 @@ InteractionService:Init()
 RadioService:Init(character)
 UIController:Init(character)
 
-
--- ESTADO DEL INPUT
-local moveInput = 0
-local strafeInput = 0
-local isHoldingShift = false
-
--- LISTENERS DE EVENTOS
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == Enum.KeyCode.W then moveInput = 1
-    elseif input.KeyCode == Enum.KeyCode.S then moveInput = -1
-    elseif input.KeyCode == Enum.KeyCode.A then strafeInput = -1
-    elseif input.KeyCode == Enum.KeyCode.D then strafeInput = 1
-    elseif input.KeyCode == Enum.KeyCode.LeftShift then isHoldingShift = true 
-	elseif input.KeyCode == Enum.KeyCode.F then FlashlightService:Toggle() end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.S then moveInput = 0
-    elseif input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.D then strafeInput = 0
-    elseif input.KeyCode == Enum.KeyCode.LeftShift then isHoldingShift = false end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        CameraController:ProcessMouseMovement(input.Delta.X, input.Delta.Y)
+InputController:Init(
+    function()
+        FlashlightService:Toggle()
+    end,
+    function(deltaX, deltaY)
+        CameraController:ProcessMouseMovement(deltaX, deltaY)
     end
-end)
+)
 
 -- LOOP PRINCIPAL DE RENDERIZADO
 RunService.RenderStepped:Connect(function(dt)
+    local moveInput, strafeInput, isHoldingShift = InputController:GetState()
     local currentYaw = CameraController:GetYaw()
     local isTryingToMove = math.abs(moveInput) > 0 or math.abs(strafeInput) > 0
     

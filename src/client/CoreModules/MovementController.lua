@@ -1,10 +1,14 @@
 local MovementController = {}
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GameConstants = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants"))
 
-local WALK_SPEED = 10
-local RUN_SPEED = 22
-local ACCELERATION = 24
-local DECELERATION = 28
-local BODY_TURN_SPEED = 0.12
+local WALK_SPEED = GameConstants.Client.Movement.WalkSpeed
+local RUN_SPEED = GameConstants.Client.Movement.RunSpeed
+local ACCELERATION = GameConstants.Client.Movement.Acceleration
+local DECELERATION = GameConstants.Client.Movement.Deceleration
+local BODY_TURN_SPEED = GameConstants.Client.Movement.BodyTurnSpeed
+local CRITICAL_HEALTH_THRESHOLD = GameConstants.Client.Movement.CriticalHealthThreshold
+local CRITICAL_SPEED_MULTIPLIER = GameConstants.Client.Movement.CriticalSpeedMultiplier
 
 local currentSpeed = 0
 
@@ -20,7 +24,7 @@ function MovementController:Update(dt, hrp, moveInput, strafeInput, isRunning, c
     -- ¡NUEVO! PENALIZACIÓN POR HERIDAS CRÍTICAS
     -- ==========================================
     local vidaActual = hrp.Parent:GetAttribute("VidaActual") or 100
-    local estaMalHerida = vidaActual <= 30
+    local estaMalHerida = vidaActual <= CRITICAL_HEALTH_THRESHOLD
     
     -- Definimos las velocidades base (ajusta los números a los que ya tenías)
     local velocidadCaminar = WALK_SPEED
@@ -28,8 +32,8 @@ function MovementController:Update(dt, hrp, moveInput, strafeInput, isRunning, c
 
     -- Si la vida es 30 o menos, cortamos la velocidad a la mitad
     if estaMalHerida then
-        velocidadCaminar = velocidadCaminar * 0.5
-        velocidadCorrer = velocidadCorrer * 0.5
+        velocidadCaminar = velocidadCaminar * CRITICAL_SPEED_MULTIPLIER
+        velocidadCorrer = velocidadCorrer * CRITICAL_SPEED_MULTIPLIER
         -- Opcional: Podríamos hacer que aquí la pantalla palpite rojo después
     end
 

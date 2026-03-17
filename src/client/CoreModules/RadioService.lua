@@ -1,7 +1,9 @@
 local RadioService = {}
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GameConstants = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants"))
 
 local radioSound = nil
-local MAX_DISTANCE = 60 -- A los 60 studs de distancia empezará a sonar bajito
+local MAX_DISTANCE = GameConstants.Client.Radio.MaxDistance -- A los 60 studs de distancia empezará a sonar bajito
 
 function RadioService:Init(character)
     local hrp = character:WaitForChild("HumanoidRootPart")
@@ -61,10 +63,10 @@ function RadioService:Update(hrpPosition)
         -- Regla de 3 invertida: Si está lejos, volumen bajo. Si está encima de ti, volumen al máximo.
         local volumenCalculado = 1 - (distanciaMinima / MAX_DISTANCE)
         -- Interpolación suave para que el volumen no cambie de golpe y suene más natural
-        radioSound.Volume = radioSound.Volume + (volumenCalculado - radioSound.Volume) * 0.1
+        radioSound.Volume = radioSound.Volume + (volumenCalculado - radioSound.Volume) * GameConstants.Client.Radio.LerpAlpha
     else
         -- Si ya no hay peligros cerca, apagamos el volumen suavemente
-        radioSound.Volume = radioSound.Volume + (0 - radioSound.Volume) * 0.1
+        radioSound.Volume = radioSound.Volume + (0 - radioSound.Volume) * GameConstants.Client.Radio.LerpAlpha
     end
 end
 

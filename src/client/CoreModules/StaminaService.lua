@@ -1,11 +1,13 @@
 local StaminaService = {};
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GameConstants = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants"))
 
 --private variables (Encapsulamiento)
-local MAX_STAMINA = 100
+local MAX_STAMINA = GameConstants.Client.Stamina.Max
 local currentStamina = MAX_STAMINA
-local STAMINA_DRAIN_RATE = 10
-local STAMINA_REGEN_RATE = 5
-local EXHAUSTION_LIMIT = 30
+local STAMINA_DRAIN_RATE = GameConstants.Client.Stamina.DrainRate
+local STAMINA_REGEN_RATE = GameConstants.Client.Stamina.RegenRate
+local EXHAUSTION_LIMIT = GameConstants.Client.Stamina.ExhaustionLimit
 local isExhausted = false
 
 --Public metod for update every frame

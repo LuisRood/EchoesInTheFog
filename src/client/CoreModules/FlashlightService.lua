@@ -1,9 +1,11 @@
 local FlashlightService = {}
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GameConstants = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants"))
 
 -- Variables privadas del servicio
 local lightObject = nil
 local isOn = false
-local FLICKER_CHANCE = 0.02 -- Probabilidad de que la luz parpadee y falle un poco
+local FLICKER_CHANCE = GameConstants.Client.Flashlight.FlickerChance -- Probabilidad de que la luz parpadee y falle un poco
 
 -- "Constructor": Configura la luz y la ancla al jugador
 function FlashlightService:Init(character)
@@ -13,8 +15,8 @@ function FlashlightService:Init(character)
     lightObject = Instance.new("SpotLight")
     lightObject.Name = "PocketFlashlight"
     lightObject.Brightness = 0 -- Inicia apagada
-    lightObject.Range = 45 -- Distancia en metros (studs) que ilumina
-    lightObject.Angle = 50 -- Apertura del cono de luz
+    lightObject.Range = GameConstants.Client.Flashlight.Range -- Distancia en metros (studs) que ilumina
+    lightObject.Angle = GameConstants.Client.Flashlight.Angle -- Apertura del cono de luz
     lightObject.Color = Color3.fromRGB(255, 240, 215) -- Un tono ligeramente cálido/viejo
     lightObject.Shadows = true -- ¡CRUCIAL! Esto activa las sombras dinámicas de terror
     lightObject.Parent = hrp
@@ -26,7 +28,7 @@ function FlashlightService:Toggle()
     
     isOn = not isOn
     if isOn then
-        lightObject.Brightness = 2
+        lightObject.Brightness = GameConstants.Client.Flashlight.MaxBrightness
     else
         lightObject.Brightness = 0
     end
@@ -38,10 +40,14 @@ function FlashlightService:Update(dt)
     
     -- Inmersión: Un pequeño parpadeo errático simulando interferencia o batería vieja
     if math.random() < FLICKER_CHANCE then
-        lightObject.Brightness = math.random() * 1.5 -- Baja la intensidad de golpe
+        lightObject.Brightness = math.random() * GameConstants.Client.Flashlight.FlickerDropMax -- Baja la intensidad de golpe
     else
         -- Regresa suavemente a la intensidad normal
-        lightObject.Brightness = math.clamp(lightObject.Brightness + (10 * dt), 0, 2)
+        lightObject.Brightness = math.clamp(
+            lightObject.Brightness + (GameConstants.Client.Flashlight.RecoverRate * dt),
+            0,
+            GameConstants.Client.Flashlight.MaxBrightness
+        )
     end
 end
 

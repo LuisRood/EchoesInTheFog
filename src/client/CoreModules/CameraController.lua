@@ -1,13 +1,16 @@
 local CameraController = {}
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GameConstants = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants"))
 
 local cameraYaw = 0 -- Horizontal Axis
 local cameraPitch = 0 --Vertical Axis
-local CAMERA_SENSITIVITY = 0.003
-local CAMERA_LAG = 0.15
+local CAMERA_SENSITIVITY = GameConstants.Client.Camera.Sensitivity
+local CAMERA_LAG = GameConstants.Client.Camera.Lag
 local cameraCFrame = workspace.CurrentCamera.CFrame
 -- Maximum incline 60 degree up and 60 degree down
-local MAX_PITCH = math.rad(60)
-local MIN_PITCH = math.rad(-60)
+local MAX_PITCH = math.rad(GameConstants.Client.Camera.MaxPitchDegrees)
+local MIN_PITCH = math.rad(GameConstants.Client.Camera.MinPitchDegrees)
+local CAMERA_OFFSET = GameConstants.Client.Camera.Offset
 
 function CameraController:ProcessMouseMovement(deltaX, deltaY)
     cameraYaw -= deltaX * CAMERA_SENSITIVITY
@@ -28,7 +31,7 @@ function CameraController:Update(hrpPosition)
         CFrame.new(hrpPosition) *
         CFrame.Angles(0, cameraYaw, 0) * -- Horizontal
         CFrame.Angles(cameraPitch, 0, 0) * -- Vertical
-        CFrame.new(0, 2, 6) -- Offset
+        CFrame.new(CAMERA_OFFSET) -- Offset
 
     cameraCFrame = cameraCFrame:Lerp(desiredCameraCFrame, CAMERA_LAG)
     camera.CFrame = cameraCFrame
