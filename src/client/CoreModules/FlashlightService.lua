@@ -10,7 +10,20 @@ local FLICKER_CHANCE = GameConstants.Client.Flashlight.FlickerChance -- Probabil
 -- "Constructor": Configura la luz y la ancla al jugador
 function FlashlightService:Init(character)
     local hrp = character:WaitForChild("HumanoidRootPart")
-    
+    -- ==========================================
+    -- FIX DEL CABELLO (Desactivar sombras locales)
+    -- ==========================================
+    for _, objeto in ipairs(character:GetDescendants()) do
+        -- Si el objeto es un accesorio (cabello, bufandas, sombreros)...
+        if objeto:IsA("Accessory") then
+            local handle = objeto:FindFirstChild("Handle")
+            if handle and handle:IsA("BasePart") then
+                -- Le quitamos la capacidad de bloquear la luz de nuestra linterna
+                handle.CastShadow = false
+            end
+        end
+    end
+    -- ==========================================
     -- Creamos un SpotLight (luz de cono) mediante código
     lightObject = Instance.new("SpotLight")
     lightObject.Name = "PocketFlashlight"
