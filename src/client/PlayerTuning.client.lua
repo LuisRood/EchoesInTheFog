@@ -40,6 +40,7 @@ InputController:Init(
 
 -- LOOP PRINCIPAL DE RENDERIZADO
 RunService.RenderStepped:Connect(function(dt)
+    InputController:Update(dt)
     local moveInput, strafeInput, isHoldingShift = InputController:GetState()
     local currentYaw = CameraController:GetYaw()
     local isTryingToMove = math.abs(moveInput) > 0 or math.abs(strafeInput) > 0

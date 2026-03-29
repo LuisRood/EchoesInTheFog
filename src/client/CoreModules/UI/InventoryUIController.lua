@@ -1,10 +1,13 @@
-local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ContextActionService = game:GetService("ContextActionService")
 
 local InventoryUIController = {}
 
 local FuncObtenerInventario = ReplicatedStorage:WaitForChild("ObtenerInventario")
 local ItemDatabase = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemDatabase"))
+local GameConstants = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants"))
+
+local ACTION_TOGGLE_INVENTORY = "EITF_ToggleInventory"
 
 local function construirMenuInventario(hudParent)
     local menu = Instance.new("Frame")
@@ -79,20 +82,33 @@ function InventoryUIController:Init(hud)
     local menuInventario, contenedorItems = construirMenuInventario(hud)
     local inventarioAbierto = false
 
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
+    local function alternarInventario()
+        inventarioAbierto = not inventarioAbierto
+        menuInventario.Visible = inventarioAbierto
 
-        if input.KeyCode == Enum.KeyCode.Tab then
-            inventarioAbierto = not inventarioAbierto
-            menuInventario.Visible = inventarioAbierto
-
-            if inventarioAbierto then
-                print("[CLIENTE] Solicitando datos del inventario al backend...")
-                local inventarioDatos = FuncObtenerInventario:InvokeServer()
-                actualizarInventarioVisual(contenedorItems, inventarioDatos)
-            end
+        if inventarioAbierto then
+            print("[CLIENTE] Solicitando datos del inventario al backend...")
+            local inventarioDatos = FuncObtenerInventario:InvokeServer()
+            actualizarInventarioVisual(contenedorItems, inventarioDatos)
         end
-    end)
+    end
+
+    ContextActionService:UnbindAction(ACTION_TOGGLE_INVENTORY)
+    ContextActionService:BindAction(
+        ACTION_TOGGLE_INVENTORY,
+        function(_, state)
+            if state == Enum.UserInputState.Begin then
+                alternarInventario()
+            end
+            return Enum.ContextActionResult.Pass
+        end,
+        true,
+        Enum.KeyCode.Tab,
+        Enum.KeyCode.ButtonY
+    )
+    ContextActionService:SetTitle(ACTION_TOGGLE_INVENTORY, "Inv")
+    ContextActionService:SetPosition(ACTION_TOGGLE_INVENTORY, GameConstants.Client.Controls.MobileButtons.InventoryPosition)
+
 end
 
 return InventoryUIController

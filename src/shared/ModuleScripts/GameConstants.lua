@@ -28,14 +28,14 @@ local GameConstants = {
             CriticalSpeedMultiplier = 0.5,
         },
         Stamina = {
-            Max = 100,
+            Max = 200,
             DrainRate = 10,
-            RegenRate = 5,
+            RegenRate = 8,
             ExhaustionLimit = 30,
         },
         Flashlight = {
             FlickerChance = 0.02,
-            Range = 45,
+            Range = 50,
             Angle = 50,
             MaxBrightness = 2,
             FlickerDropMax = 1.5,
@@ -48,6 +48,19 @@ local GameConstants = {
         EndgameUI = {
             FadeSeconds = 4,
             PostFadeSeconds = 2,
+        },
+        Controls = {
+            StickDeadzone = 0.12,
+            KeyboardTurnRateDegPerSec = 170,
+            GamepadTurnRateDegPerSec = 210,
+            GamepadLookRateDegPerSec = 180,
+            MobileLookAreaMinX = 0.45,
+            MobileLookSensitivityMultiplier = 0.8,
+            MobileButtons = {
+                RunPosition = UDim2.new(0.83, 0, 0.64, 0),
+                FlashlightPosition = UDim2.new(0.83, 0, 0.77, 0),
+                InventoryPosition = UDim2.new(0.70, 0, 0.77, 0),
+            },
         },
     },
 }
