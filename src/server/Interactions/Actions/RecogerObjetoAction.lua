@@ -1,4 +1,6 @@
 local RecogerObjetoAction = {}
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ItemDatabase = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemDatabase"))
 
 function RecogerObjetoAction.Handle(context, prompt, player)
     local objetoFisico = prompt.Parent
@@ -7,7 +9,9 @@ function RecogerObjetoAction.Handle(context, prompt, player)
 
     if not nombreObjeto then return end
 
-    local sePudoRecoger = context.InventoryManager:AddItem(player, nombreObjeto, 1, descripcionObjeto)
+    local itemData = ItemDatabase[nombreObjeto]
+    local cantidadRecogida = (itemData and itemData.PickupAmount) or 1
+    local sePudoRecoger = context.InventoryManager:AddItem(player, nombreObjeto, cantidadRecogida, descripcionObjeto)
 
     if sePudoRecoger then
         objetoFisico:Destroy()

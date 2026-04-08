@@ -1,6 +1,7 @@
 -- SERVICIOS DE ROBLOX
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- INYECCIÓN DE DEPENDENCIAS (Módulos)
 local CoreModules = script.Parent:WaitForChild("CoreModules")
@@ -12,6 +13,7 @@ local InteractionService = require(CoreModules:WaitForChild("InteractionService"
 local RadioService = require(CoreModules:WaitForChild("RadioService"))
 local UIController = require(CoreModules:WaitForChild("UIController"))
 local InputController = require(CoreModules:WaitForChild("InputController"))
+local FuncRecargarArma = ReplicatedStorage:WaitForChild("RecargarArma")
 
 -- REFERENCIAS
 local player = Players.LocalPlayer
@@ -35,6 +37,12 @@ InputController:Init(
     end,
     function(deltaX, deltaY)
         CameraController:ProcessMouseMovement(deltaX, deltaY)
+    end,
+    function()
+        local ok, resultado = FuncRecargarArma:InvokeServer(nil)
+        if not ok then
+            warn("[ARMA] No se pudo recargar: " .. tostring(resultado))
+        end
     end
 )
 

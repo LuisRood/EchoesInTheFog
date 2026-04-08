@@ -86,7 +86,7 @@ local function clearOtherWeapons(character, backpack, keepName)
     clearIn(backpack)
 end
 
-function EquipmentManager:EquipItem(player, itemName, inventoryManager)
+function EquipmentManager:EquipItem(player, itemName, inventoryManager, weaponStateManager)
     itemName = normalizarNombreItem(itemName)
 
     if typeof(itemName) ~= "string" or itemName == "" then
@@ -125,6 +125,12 @@ function EquipmentManager:EquipItem(player, itemName, inventoryManager)
 
     clearOtherWeapons(character, backpack, itemName)
     humanoid:EquipTool(tool)
+
+    if weaponStateManager and weaponStateManager.EnsureWeaponState then
+        weaponStateManager:EnsureWeaponState(player, itemName)
+        weaponStateManager:SyncToolAttributes(player, itemName, tool)
+    end
+
     return true, "Equipado"
 end
 

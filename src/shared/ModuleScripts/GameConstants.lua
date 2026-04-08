@@ -60,6 +60,7 @@ local GameConstants = {
                 RunPosition = UDim2.new(0.83, 0, 0.64, 0),
                 FlashlightPosition = UDim2.new(0.83, 0, 0.77, 0),
                 InventoryPosition = UDim2.new(0.70, 0, 0.77, 0),
+                ReloadPosition = UDim2.new(0.57, 0, 0.77, 0),
             },
         },
     },

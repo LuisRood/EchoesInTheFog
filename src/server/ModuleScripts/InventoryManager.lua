@@ -100,6 +100,17 @@ function InventoryManager:HasItem(player, itemName)
     return (inventory[itemName] or 0) > 0
 end
 
+function InventoryManager:GetItemCount(player, itemName)
+    itemName = normalizarNombreItem(itemName)
+
+    local inventory = playerInventories[player.UserId]
+    if not inventory then
+        return 0
+    end
+
+    return inventory[itemName] or 0
+end
+
 -- ==========================================
 -- CONSUMIR OBJETO (Curarse o disparar)
 -- ==========================================

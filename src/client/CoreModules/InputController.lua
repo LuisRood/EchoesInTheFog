@@ -35,9 +35,10 @@ local changedConnection = nil
 
 local flashlightCallback
 local mouseMoveCallback
+local reloadCallback
 
 local ACTION_RUN = "EITF_Run"
-local ACTION_FLASHLIGHT = "EITF_Flashlight"
+local ACTION_RELOAD = "EITF_Reload"
 
 local controlsConfig = GameConstants.Client.Controls
 local STICK_DEADZONE = controlsConfig.StickDeadzone
@@ -114,6 +115,13 @@ local function onFlashlightAction(_, state)
     return Enum.ContextActionResult.Pass
 end
 
+local function onReloadAction(_, state)
+    if state == Enum.UserInputState.Begin and reloadCallback then
+        reloadCallback()
+    end
+    return Enum.ContextActionResult.Pass
+end
+
 local function updateMobileMoveFromHumanoid()
     if not UserInputService.TouchEnabled then
         return
@@ -150,9 +158,10 @@ local function updateMobileMoveFromHumanoid()
     strafeInput = math.clamp(moveDir:Dot(flatRight), -1, 1)
 end
 
-function InputController:Init(onFlashlightToggle, onMouseMove)
+function InputController:Init(onFlashlightToggle, onMouseMove, onReload)
     flashlightCallback = onFlashlightToggle
     mouseMoveCallback = onMouseMove
+    reloadCallback = onReload
 
     if beganConnection then
         beganConnection:Disconnect()
@@ -189,10 +198,15 @@ function InputController:Init(onFlashlightToggle, onMouseMove)
     gamepadDPadUpPrevious = false
 
     ContextActionService:UnbindAction(ACTION_RUN)
+    ContextActionService:UnbindAction(ACTION_RELOAD)
 
     ContextActionService:BindAction(ACTION_RUN, onRunAction, true, Enum.KeyCode.ButtonX)
     ContextActionService:SetTitle(ACTION_RUN, "Correr")
     ContextActionService:SetPosition(ACTION_RUN, controlsConfig.MobileButtons.RunPosition)
+
+    ContextActionService:BindAction(ACTION_RELOAD, onReloadAction, true, Enum.KeyCode.DPadDown)
+    ContextActionService:SetTitle(ACTION_RELOAD, "Rec")
+    ContextActionService:SetPosition(ACTION_RELOAD, controlsConfig.MobileButtons.ReloadPosition)
 
     beganConnection = UserInputService.InputBegan:Connect(function(input, gp)
         if gp and input.UserInputType ~= Enum.UserInputType.Gamepad1 then
@@ -219,8 +233,12 @@ function InputController:Init(onFlashlightToggle, onMouseMove)
             shoulderStrafeRight = true
         elseif input.KeyCode == Enum.KeyCode.DPadUp and flashlightCallback then
             flashlightCallback()
+        elseif input.KeyCode == Enum.KeyCode.DPadDown and reloadCallback then
+            reloadCallback()
         elseif input.KeyCode == Enum.KeyCode.F and flashlightCallback then
             flashlightCallback()
+        elseif input.KeyCode == Enum.KeyCode.R and reloadCallback then
+            reloadCallback()
         end
 
         recomputeDigitalAxes()

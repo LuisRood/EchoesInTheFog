@@ -78,7 +78,7 @@ local ItemDatabase = {
     -- ==========================================
     -- MUNICIÓN
     -- ==========================================
-    ["BalasPistola"] = { Tipo = "Municion", MaxStack = 50, Descripcion = "Balas calibre 9mm." },
+    ["BalasPistola"] = { Tipo = "Municion", MaxStack = 50, PickupAmount = 15, Descripcion = "Balas calibre 9mm." },
     ["CartuchosEscopeta"] = { Tipo = "Municion", MaxStack = 30, Descripcion = "Cartuchos de perdigones." },
     ["BalasRifle"] = { Tipo = "Municion", MaxStack = 20, Descripcion = "Balas perforantes pesadas." }
 }

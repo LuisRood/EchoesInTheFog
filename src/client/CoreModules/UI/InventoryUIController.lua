@@ -7,6 +7,8 @@ local InventoryUIController = {}
 
 local FuncObtenerInventario = ReplicatedStorage:WaitForChild("ObtenerInventario")
 local FuncEquiparItem = ReplicatedStorage:WaitForChild("EquiparItem")
+local FuncObtenerEstadoArma = ReplicatedStorage:WaitForChild("ObtenerEstadoArma")
+local FuncRecargarArma = ReplicatedStorage:WaitForChild("RecargarArma")
 local ItemDatabase = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemDatabase"))
 local GameConstants = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants"))
 
@@ -145,7 +147,7 @@ local function construirMenuInventario(hudParent)
 
     local descDetalle = Instance.new("TextLabel")
     descDetalle.Name = "DescripcionDetalle"
-    descDetalle.Size = UDim2.new(0.9, 0, 0.42, 0)
+    descDetalle.Size = UDim2.new(0.9, 0, 0.34, 0)
     descDetalle.Position = UDim2.new(0.05, 0, 0.22, 0)
     descDetalle.BackgroundTransparency = 1
     descDetalle.Text = ""
@@ -158,8 +160,8 @@ local function construirMenuInventario(hudParent)
 
     local estadoDetalle = Instance.new("TextLabel")
     estadoDetalle.Name = "EstadoDetalle"
-    estadoDetalle.Size = UDim2.new(0.9, 0, 0.08, 0)
-    estadoDetalle.Position = UDim2.new(0.05, 0, 0.67, 0)
+    estadoDetalle.Size = UDim2.new(0.9, 0, 0.13, 0)
+    estadoDetalle.Position = UDim2.new(0.05, 0, 0.58, 0)
     estadoDetalle.BackgroundTransparency = 1
     estadoDetalle.Text = ""
     estadoDetalle.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -170,8 +172,8 @@ local function construirMenuInventario(hudParent)
 
     local btnAccion = Instance.new("TextButton")
     btnAccion.Name = "BotonAccion"
-    btnAccion.Size = UDim2.new(0.56, 0, 0.12, 0)
-    btnAccion.Position = UDim2.new(0.22, 0, 0.8, 0)
+    btnAccion.Size = UDim2.new(0.56, 0, 0.1, 0)
+    btnAccion.Position = UDim2.new(0.22, 0, 0.86, 0)
     btnAccion.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
     btnAccion.TextColor3 = Color3.new(1, 1, 1)
     btnAccion.Text = "EQUIPAR"
@@ -183,10 +185,25 @@ local function construirMenuInventario(hudParent)
     btnAccion.Visible = false
     btnAccion.Parent = panelDetalle
 
+    local btnSecundario = Instance.new("TextButton")
+    btnSecundario.Name = "BotonSecundario"
+    btnSecundario.Size = UDim2.new(0.56, 0, 0.1, 0)
+    btnSecundario.Position = UDim2.new(0.22, 0, 0.74, 0)
+    btnSecundario.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    btnSecundario.TextColor3 = Color3.new(1, 1, 1)
+    btnSecundario.Text = "RECARGAR"
+    btnSecundario.TextScaled = true
+    btnSecundario.Font = Enum.Font.Oswald
+    btnSecundario.AutoButtonColor = true
+    btnSecundario.Active = true
+    btnSecundario.Selectable = true
+    btnSecundario.Visible = false
+    btnSecundario.Parent = panelDetalle
+
     local hintDetalle = Instance.new("TextLabel")
     hintDetalle.Name = "HintDetalle"
-    hintDetalle.Size = UDim2.new(0.9, 0, 0.05, 0)
-    hintDetalle.Position = UDim2.new(0.05, 0, 0.94, 0)
+    hintDetalle.Size = UDim2.new(0.9, 0, 0.035, 0)
+    hintDetalle.Position = UDim2.new(0.05, 0, 0.96, 0)
     hintDetalle.BackgroundTransparency = 1
     hintDetalle.Text = "PC: click | Móvil: tocar | Control: A"
     hintDetalle.TextColor3 = Color3.fromRGB(120, 120, 120)
@@ -195,7 +212,7 @@ local function construirMenuInventario(hudParent)
     hintDetalle.TextXAlignment = Enum.TextXAlignment.Left
     hintDetalle.Parent = panelDetalle
 
-    return menu, contenedorItems, tituloDetalle, descDetalle, estadoDetalle, btnAccion
+    return menu, contenedorItems, tituloDetalle, descDetalle, estadoDetalle, btnAccion, btnSecundario
 end
 
 local function limpiarContenido(contenedorItems)
@@ -273,7 +290,7 @@ local function crearFilaItem(contenedorItems, nombreCanonico, cantidad, infoItem
 end
 
 function InventoryUIController:Init(hud)
-    local menuInventario, contenedorItems, tituloDetalle, descDetalle, estadoDetalle, btnAccion = construirMenuInventario(hud)
+    local menuInventario, contenedorItems, tituloDetalle, descDetalle, estadoDetalle, btnAccion, btnSecundario = construirMenuInventario(hud)
     local inventarioAbierto = false
     local inventarioActual = {}
     local itemSeleccionado = nil
@@ -285,6 +302,7 @@ function InventoryUIController:Init(hud)
         local cantidad = inventarioActual[nombreCanonico] or 1
         local infoItem = ItemDatabase[nombreCanonico] or {Descripcion = "Objeto misterioso."}
         local esEquipable = esItemEquipable(infoItem)
+        local esArmaFuego = string.lower(tostring(infoItem.Tipo or "")) == "fuego"
 
         tituloDetalle.Text = nombreCanonico .. " (x" .. cantidad .. ")"
         descDetalle.Text = infoItem.Descripcion or "Objeto misterioso."
@@ -295,9 +313,27 @@ function InventoryUIController:Init(hud)
             estadoDetalle.Text = "Arma disponible para equipar"
             btnAccion.Visible = true
             btnAccion.Text = "EQUIPAR"
+
+            if esArmaFuego then
+                local ok, estadoArma = FuncObtenerEstadoArma:InvokeServer(nombreCanonico)
+                if ok and estadoArma then
+                    estadoDetalle.Text = string.format(
+                        "Cargador: %d/%d  |  Reserva (%s): %d",
+                        estadoArma.AmmoInMag or 0,
+                        estadoArma.MagCapacity or 0,
+                        tostring(estadoArma.AmmoType or "?"),
+                        estadoArma.ReserveAmmo or 0
+                    )
+                end
+
+                btnSecundario.Visible = true
+            else
+                btnSecundario.Visible = false
+            end
         else
             estadoDetalle.Text = "Objeto sin acción de equipo"
             btnAccion.Visible = false
+            btnSecundario.Visible = false
         end
 
         if UserInputService.GamepadEnabled and esEquipable then
@@ -311,6 +347,7 @@ function InventoryUIController:Init(hud)
         itemSeleccionado = nil
         itemSeleccionadoEquipable = false
         btnAccion.Visible = false
+        btnSecundario.Visible = false
         estadoDetalle.Text = ""
 
         local listaNombres = {}
@@ -385,9 +422,38 @@ function InventoryUIController:Init(hud)
         ultimoEquipar = now
 
         if solicitarEquipar(itemSeleccionado) then
-            estadoDetalle.Text = "Objeto equipado"
+            actualizarDetalle(itemSeleccionado)
         end
     end)
+
+    local function intentarRecargarSeleccionada()
+        if not itemSeleccionado or not itemSeleccionadoEquipable then
+            return
+        end
+
+        local infoItem = ItemDatabase[itemSeleccionado]
+        if not infoItem or string.lower(tostring(infoItem.Tipo or "")) ~= "fuego" then
+            return
+        end
+
+        local ok, estadoOError = FuncRecargarArma:InvokeServer(itemSeleccionado)
+        if not ok then
+            estadoDetalle.Text = tostring(estadoOError)
+            return
+        end
+
+        local estadoArma = estadoOError
+        estadoDetalle.Text = string.format(
+            "Cargador: %d/%d  |  Reserva (%s): %d",
+            estadoArma.AmmoInMag or 0,
+            estadoArma.MagCapacity or 0,
+            tostring(estadoArma.AmmoType or "?"),
+            estadoArma.ReserveAmmo or 0
+        )
+    end
+
+    btnSecundario.MouseButton1Click:Connect(intentarRecargarSeleccionada)
+    btnSecundario.Activated:Connect(intentarRecargarSeleccionada)
 
     ContextActionService:UnbindAction(ACTION_TOGGLE_INVENTORY)
     ContextActionService:BindAction(
