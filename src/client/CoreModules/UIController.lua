@@ -37,12 +37,13 @@ local InventoryUIController = requireModule("InventoryUIController")
 local NotesUIController = requireModule("NotesUIController")
 local EndgameUIController = requireModule("EndgameUIController")
 local HealthHUDController = requireModule("HealthHUDController")
+local CrosshairUIController = requireModule("CrosshairUIController")
 
 -- ==========================================
 -- INICIALIZACIÓN DEL CLIENTE (Init)
 -- ==========================================
 function UIController:Init(character)
-    if not InventoryUIController or not NotesUIController or not EndgameUIController or not HealthHUDController then
+    if not InventoryUIController or not NotesUIController or not EndgameUIController or not HealthHUDController or not CrosshairUIController then
         warn("[UI] No se pudo inicializar la UI completa por un modulo faltante o con error.")
         return
     end
@@ -63,6 +64,7 @@ function UIController:Init(character)
     NotesUIController:Init(hud)
     EndgameUIController:Init(hud)
     HealthHUDController:Init(character, hud)
+    CrosshairUIController:Init(character, hud)
 end
 
 return UIController

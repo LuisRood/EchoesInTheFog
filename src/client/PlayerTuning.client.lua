@@ -14,12 +14,40 @@ local RadioService = require(CoreModules:WaitForChild("RadioService"))
 local UIController = require(CoreModules:WaitForChild("UIController"))
 local InputController = require(CoreModules:WaitForChild("InputController"))
 local FuncRecargarArma = ReplicatedStorage:WaitForChild("RecargarArma")
+local FuncDispararArma = ReplicatedStorage:WaitForChild("DispararArma")
+local FuncObtenerEstadoArma = ReplicatedStorage:WaitForChild("ObtenerEstadoArma")
 
 -- REFERENCIAS
 local player = Players.LocalPlayer
 local character = script.Parent
 local humanoid = character:WaitForChild("Humanoid")
 local hrp = character:WaitForChild("HumanoidRootPart")
+
+-- CREAR SONIDO DE DISPARO
+local gunshot = Instance.new("Sound")
+gunshot.Name = "Gunshot"
+gunshot.Volume = 0.7
+gunshot.SoundId = "rbxassetid://123448793380050" -- Sonido de balazo genérico de Roblox
+gunshot.Parent = hrp
+
+-- CREAR SONIDO DE RECARGA
+local reloadSound = Instance.new("Sound")
+reloadSound.Name = "ReloadSound"
+reloadSound.Volume = 0.5
+reloadSound.SoundId = "rbxassetid://139798971373512" -- Sonido de recarga
+reloadSound.Parent = hrp
+
+-- Variables de control de recarga
+local isReloading = false
+
+local function getEquippedWeapon()
+	for _, child in ipairs(character:GetChildren()) do
+		if child:IsA("Tool") then
+			return child
+		end
+	end
+	return nil
+end
 
 -- SETUP INICIAL
 humanoid.WalkSpeed = 0
@@ -39,9 +67,50 @@ InputController:Init(
         CameraController:ProcessMouseMovement(deltaX, deltaY)
     end,
     function()
-        local ok, resultado = FuncRecargarArma:InvokeServer(nil)
-        if not ok then
+        if isReloading then
+            return
+        end
+        
+        local equippedWeapon = getEquippedWeapon()
+        if not equippedWeapon then
+            return
+        end
+        
+        -- Verificar si hay munición en inventario
+        local ok, estado = FuncObtenerEstadoArma:InvokeServer(nil)
+        if not ok or not estado or (estado.ReserveAmmo or 0) <= 0 then
+            warn("[ARMA] No hay munición para recargar")
+            return
+        end
+        
+        isReloading = true
+        reloadSound:Play()
+        
+        -- Delay de 2 segundos solo para Pistola
+        local reloadTime = equippedWeapon.Name == "Pistola" and 2 or 0
+        
+        if reloadTime > 0 then
+            task.wait(reloadTime)
+        end
+        
+        local reloadOk, resultado = FuncRecargarArma:InvokeServer(nil)
+        if not reloadOk then
             warn("[ARMA] No se pudo recargar: " .. tostring(resultado))
+        end
+        
+        isReloading = false
+    end,
+    function()
+        local camera = workspace.CurrentCamera
+        if not camera then
+            return
+        end
+
+        local ok, resultado = FuncDispararArma:InvokeServer(camera.CFrame.Position, camera.CFrame.LookVector)
+        if ok then
+            gunshot:Play()
+        else
+            warn("[ARMA] No se pudo disparar: " .. tostring(resultado))
         end
     end
 )

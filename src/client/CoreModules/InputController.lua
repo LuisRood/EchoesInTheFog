@@ -36,9 +36,11 @@ local changedConnection = nil
 local flashlightCallback
 local mouseMoveCallback
 local reloadCallback
+local fireCallback
 
 local ACTION_RUN = "EITF_Run"
 local ACTION_RELOAD = "EITF_Reload"
+local ACTION_FIRE = "EITF_Fire"
 
 local controlsConfig = GameConstants.Client.Controls
 local STICK_DEADZONE = controlsConfig.StickDeadzone
@@ -122,6 +124,13 @@ local function onReloadAction(_, state)
     return Enum.ContextActionResult.Pass
 end
 
+local function onFireAction(_, state)
+    if state == Enum.UserInputState.Begin and fireCallback then
+        fireCallback()
+    end
+    return Enum.ContextActionResult.Pass
+end
+
 local function updateMobileMoveFromHumanoid()
     if not UserInputService.TouchEnabled then
         return
@@ -158,10 +167,11 @@ local function updateMobileMoveFromHumanoid()
     strafeInput = math.clamp(moveDir:Dot(flatRight), -1, 1)
 end
 
-function InputController:Init(onFlashlightToggle, onMouseMove, onReload)
+function InputController:Init(onFlashlightToggle, onMouseMove, onReload, onFire)
     flashlightCallback = onFlashlightToggle
     mouseMoveCallback = onMouseMove
     reloadCallback = onReload
+    fireCallback = onFire
 
     if beganConnection then
         beganConnection:Disconnect()
@@ -199,6 +209,7 @@ function InputController:Init(onFlashlightToggle, onMouseMove, onReload)
 
     ContextActionService:UnbindAction(ACTION_RUN)
     ContextActionService:UnbindAction(ACTION_RELOAD)
+    ContextActionService:UnbindAction(ACTION_FIRE)
 
     ContextActionService:BindAction(ACTION_RUN, onRunAction, true, Enum.KeyCode.ButtonX)
     ContextActionService:SetTitle(ACTION_RUN, "Correr")
@@ -207,6 +218,10 @@ function InputController:Init(onFlashlightToggle, onMouseMove, onReload)
     ContextActionService:BindAction(ACTION_RELOAD, onReloadAction, true, Enum.KeyCode.DPadDown)
     ContextActionService:SetTitle(ACTION_RELOAD, "Rec")
     ContextActionService:SetPosition(ACTION_RELOAD, controlsConfig.MobileButtons.ReloadPosition)
+
+    ContextActionService:BindAction(ACTION_FIRE, onFireAction, true, Enum.KeyCode.ButtonR2)
+    ContextActionService:SetTitle(ACTION_FIRE, "Fuego")
+    ContextActionService:SetPosition(ACTION_FIRE, controlsConfig.MobileButtons.FirePosition)
 
     beganConnection = UserInputService.InputBegan:Connect(function(input, gp)
         if gp and input.UserInputType ~= Enum.UserInputType.Gamepad1 then
@@ -239,6 +254,10 @@ function InputController:Init(onFlashlightToggle, onMouseMove, onReload)
             flashlightCallback()
         elseif input.KeyCode == Enum.KeyCode.R and reloadCallback then
             reloadCallback()
+        elseif input.KeyCode == Enum.KeyCode.ButtonR2 and fireCallback then
+            fireCallback()
+        elseif input.UserInputType == Enum.UserInputType.MouseButton1 and fireCallback then
+            fireCallback()
         end
 
         recomputeDigitalAxes()

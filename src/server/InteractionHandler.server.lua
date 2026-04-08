@@ -7,6 +7,7 @@ local TweenService = game:GetService("TweenService")
 local PlayerStateManager = require(ModuleScripts:WaitForChild("PlayerStateManager"))
 local InventoryManager = require(ModuleScripts:WaitForChild("InventoryManager"))
 local WeaponStateManager = require(ModuleScripts:WaitForChild("WeaponStateManager"))
+local WeaponCombatManager = require(ModuleScripts:WaitForChild("WeaponCombatManager"))
 local EquipmentManager = require(ModuleScripts:WaitForChild("EquipmentManager"))
 local RemoteRegistry = require(ModuleScripts:WaitForChild("RemoteRegistry"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -31,11 +32,12 @@ local ItemAction = require(ActionsFolder:WaitForChild("ItemAction"))
 
 RemoteRegistry:RegisterInventoryEndpoint(InventoryManager)
 RemoteRegistry:RegisterEquipEndpoint(InventoryManager, EquipmentManager, WeaponStateManager)
-RemoteRegistry:RegisterWeaponEndpoints(InventoryManager, WeaponStateManager)
+RemoteRegistry:RegisterWeaponEndpoints(InventoryManager, WeaponStateManager, WeaponCombatManager)
 print("[BACKEND] Motor de Interacciones del Servidor Iniciado")
 
 Players.PlayerRemoving:Connect(function(player)
     WeaponStateManager:ClearPlayer(player)
+    WeaponCombatManager:ClearPlayer(player)
 end)
 
 local actionContext = {

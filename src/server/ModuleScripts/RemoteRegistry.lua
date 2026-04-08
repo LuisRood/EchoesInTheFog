@@ -37,9 +37,10 @@ function RemoteRegistry:RegisterEquipEndpoint(inventoryManager, equipmentManager
     return remoteFunction
 end
 
-function RemoteRegistry:RegisterWeaponEndpoints(inventoryManager, weaponStateManager)
+function RemoteRegistry:RegisterWeaponEndpoints(inventoryManager, weaponStateManager, weaponCombatManager)
     local getStatus = getOrCreateRemoteFunction("ObtenerEstadoArma")
     local reloadWeapon = getOrCreateRemoteFunction("RecargarArma")
+    local fireWeapon = getOrCreateRemoteFunction("DispararArma")
 
     getStatus.OnServerInvoke = function(player, weaponName)
         return weaponStateManager:GetWeaponStatus(player, weaponName, inventoryManager)
@@ -49,7 +50,11 @@ function RemoteRegistry:RegisterWeaponEndpoints(inventoryManager, weaponStateMan
         return weaponStateManager:ReloadWeapon(player, weaponName, inventoryManager)
     end
 
-    return getStatus, reloadWeapon
+    fireWeapon.OnServerInvoke = function(player, shotOrigin, shotDirection)
+        return weaponCombatManager:FireWeapon(player, shotOrigin, shotDirection, weaponStateManager, inventoryManager)
+    end
+
+    return getStatus, reloadWeapon, fireWeapon
 end
 
 return RemoteRegistry

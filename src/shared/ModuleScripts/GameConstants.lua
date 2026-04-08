@@ -61,8 +61,14 @@ local GameConstants = {
                 FlashlightPosition = UDim2.new(0.83, 0, 0.77, 0),
                 InventoryPosition = UDim2.new(0.70, 0, 0.77, 0),
                 ReloadPosition = UDim2.new(0.57, 0, 0.77, 0),
+                FirePosition = UDim2.new(0.70, 0, 0.64, 0),
             },
         },
+    },
+    Weapons = {
+        HitscanDistance = 180,
+        FireCooldownSeconds = 0.12,
+        MaxOriginOffsetFromHead = 20,
     },
 }
 
