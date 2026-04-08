@@ -5,6 +5,30 @@ local ItemDatabase = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChi
 
 local playerInventories = {} -- Tabla para almacenar los inventarios de cada jugador
 
+local function normalizarNombreItem(itemName)
+    if typeof(itemName) ~= "string" then
+        return itemName
+    end
+
+    local limpio = string.match(itemName, "^%s*(.-)%s*$")
+    if limpio == "" then
+        return itemName
+    end
+
+    if ItemDatabase[limpio] then
+        return limpio
+    end
+
+    local lower = string.lower(limpio)
+    for key in pairs(ItemDatabase) do
+        if string.lower(key) == lower then
+            return key
+        end
+    end
+
+    return limpio
+end
+
 -- Función privada (Lazy Initialization)
 local function obtenerOCrearInventario(player)
     local inventario = player:FindFirstChild("Inventario")
@@ -23,6 +47,8 @@ end
 -- ==========================================
 -- ¡Actualizamos la función para recibir itemDescription!
 function InventoryManager:AddItem(player, itemName, amount, itemDescription)
+    itemName = normalizarNombreItem(itemName)
+
     if not playerInventories[player.UserId] then
         playerInventories[player.UserId] = {}
     end
@@ -66,6 +92,8 @@ end
 -- CONSULTAR OBJETO (Para llaves o armas)
 -- ==========================================
 function InventoryManager:HasItem(player, itemName)
+    itemName = normalizarNombreItem(itemName)
+
     local inventory = playerInventories[player.UserId]
     if not inventory then return false end
     
@@ -76,6 +104,8 @@ end
 -- CONSUMIR OBJETO (Curarse o disparar)
 -- ==========================================
 function InventoryManager:RemoveItem(player, itemName, amount)
+    itemName = normalizarNombreItem(itemName)
+
     local inventory = playerInventories[player.UserId]
     if not inventory then return false end
     

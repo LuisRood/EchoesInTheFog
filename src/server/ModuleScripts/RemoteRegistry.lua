@@ -27,4 +27,14 @@ function RemoteRegistry:RegisterInventoryEndpoint(inventoryManager)
     return remoteFunction
 end
 
+function RemoteRegistry:RegisterEquipEndpoint(inventoryManager, equipmentManager)
+    local remoteFunction = getOrCreateRemoteFunction("EquiparItem")
+
+    remoteFunction.OnServerInvoke = function(player, itemName)
+        return equipmentManager:EquipItem(player, itemName, inventoryManager)
+    end
+
+    return remoteFunction
+end
+
 return RemoteRegistry
