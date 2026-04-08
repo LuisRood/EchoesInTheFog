@@ -29,6 +29,9 @@ local gamepadLook = Vector2.zero
 local gamepadDPadUpPrevious = false
 
 local rightLookTouches = {}
+local beganConnection = nil
+local endedConnection = nil
+local changedConnection = nil
 
 local flashlightCallback
 local mouseMoveCallback
@@ -151,13 +154,47 @@ function InputController:Init(onFlashlightToggle, onMouseMove)
     flashlightCallback = onFlashlightToggle
     mouseMoveCallback = onMouseMove
 
+    if beganConnection then
+        beganConnection:Disconnect()
+        beganConnection = nil
+    end
+    if endedConnection then
+        endedConnection:Disconnect()
+        endedConnection = nil
+    end
+    if changedConnection then
+        changedConnection:Disconnect()
+        changedConnection = nil
+    end
+
+    moveInput = 0
+    strafeInput = 0
+    isHoldingShift = false
+    digitalMoveInput = 0
+    digitalTurnInput = 0
+
+    keyForward = false
+    keyBackward = false
+    keyTurnLeft = false
+    keyTurnRight = false
+    keyStrafeLeft = false
+    keyStrafeRight = false
+
+    shoulderStrafeLeft = false
+    shoulderStrafeRight = false
+
+    gamepadMoveY = 0
+    gamepadStrafeX = 0
+    gamepadLook = Vector2.zero
+    gamepadDPadUpPrevious = false
+
     ContextActionService:UnbindAction(ACTION_RUN)
 
     ContextActionService:BindAction(ACTION_RUN, onRunAction, true, Enum.KeyCode.ButtonX)
     ContextActionService:SetTitle(ACTION_RUN, "Correr")
     ContextActionService:SetPosition(ACTION_RUN, controlsConfig.MobileButtons.RunPosition)
 
-    UserInputService.InputBegan:Connect(function(input, gp)
+    beganConnection = UserInputService.InputBegan:Connect(function(input, gp)
         if gp and input.UserInputType ~= Enum.UserInputType.Gamepad1 then
             return
         end
@@ -189,7 +226,7 @@ function InputController:Init(onFlashlightToggle, onMouseMove)
         recomputeDigitalAxes()
     end)
 
-    UserInputService.InputEnded:Connect(function(input)
+    endedConnection = UserInputService.InputEnded:Connect(function(input)
         if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.S then
             if input.KeyCode == Enum.KeyCode.W then
                 keyForward = false
@@ -219,7 +256,7 @@ function InputController:Init(onFlashlightToggle, onMouseMove)
         recomputeDigitalAxes()
     end)
 
-    UserInputService.InputChanged:Connect(function(input)
+    changedConnection = UserInputService.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement and mouseMoveCallback then
             mouseMoveCallback(input.Delta.X, input.Delta.Y)
         elseif input.UserInputType == Enum.UserInputType.Touch and mouseMoveCallback then
