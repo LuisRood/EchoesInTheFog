@@ -49,6 +49,12 @@ local GameConstants = {
             FadeSeconds = 4,
             PostFadeSeconds = 2,
         },
+        Sounds = {
+            GunshotVolume = 0.8,
+            GunshotSoundId = "rbxassetid://123448793380050", -- Sonido de balazo genérico de Roblox
+            ReloadVolume = 0.5,
+            ReloadSoundId = "rbxassetid://139798971373512", -- Sonido de recarga
+        },
         Controls = {
             StickDeadzone = 0.12,
             KeyboardTurnRateDegPerSec = 170,

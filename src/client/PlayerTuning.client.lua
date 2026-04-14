@@ -13,6 +13,9 @@ local InteractionService = require(CoreModules:WaitForChild("InteractionService"
 local RadioService = require(CoreModules:WaitForChild("RadioService"))
 local UIController = require(CoreModules:WaitForChild("UIController"))
 local InputController = require(CoreModules:WaitForChild("InputController"))
+local SharedModules = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts")
+local GameConstants = require(SharedModules:WaitForChild("GameConstants"))
+local ItemDatabase = require(SharedModules:WaitForChild("ItemDatabase"))
 local FuncRecargarArma = ReplicatedStorage:WaitForChild("RecargarArma")
 local FuncDispararArma = ReplicatedStorage:WaitForChild("DispararArma")
 local FuncObtenerEstadoArma = ReplicatedStorage:WaitForChild("ObtenerEstadoArma")
@@ -24,17 +27,18 @@ local humanoid = character:WaitForChild("Humanoid")
 local hrp = character:WaitForChild("HumanoidRootPart")
 
 -- CREAR SONIDO DE DISPARO
+local soundsConfig = GameConstants.Client.Sounds
 local gunshot = Instance.new("Sound")
 gunshot.Name = "Gunshot"
-gunshot.Volume = 0.7
-gunshot.SoundId = "rbxassetid://123448793380050" -- Sonido de balazo genérico de Roblox
+gunshot.Volume = soundsConfig.GunshotVolume
+gunshot.SoundId = soundsConfig.GunshotSoundId
 gunshot.Parent = hrp
 
 -- CREAR SONIDO DE RECARGA
 local reloadSound = Instance.new("Sound")
 reloadSound.Name = "ReloadSound"
-reloadSound.Volume = 0.5
-reloadSound.SoundId = "rbxassetid://139798971373512" -- Sonido de recarga
+reloadSound.Volume = soundsConfig.ReloadVolume
+reloadSound.SoundId = soundsConfig.ReloadSoundId
 reloadSound.Parent = hrp
 
 -- Variables de control de recarga
@@ -86,8 +90,9 @@ InputController:Init(
         isReloading = true
         reloadSound:Play()
         
-        -- Delay de 2 segundos solo para Pistola
-        local reloadTime = equippedWeapon.Name == "Pistola" and 2 or 0
+        -- Delay de recarga según datos del arma
+        local weaponData = ItemDatabase[equippedWeapon.Name]
+        local reloadTime = (weaponData and weaponData.ReloadTimeSeconds) or 0
         
         if reloadTime > 0 then
             task.wait(reloadTime)
