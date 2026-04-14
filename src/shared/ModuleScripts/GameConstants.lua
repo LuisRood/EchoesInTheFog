@@ -69,6 +69,16 @@ local GameConstants = {
         HitscanDistance = 180,
         FireCooldownSeconds = 0.12,
         MaxOriginOffsetFromHead = 20,
+        ReloadDebounceSeconds = 0.2,
+    },
+    Server = {
+        MovementValidation = {
+            Enabled = true,
+            MaxSpeed = 25,
+            ToleranceFactor = 2.6,
+            GraceDistance = 2,
+            MaxStrikes = 3,
+        },
     },
 }
 

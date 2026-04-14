@@ -3,6 +3,7 @@ local AttributeNames = {
     RequiereLlave = "RequiereLlave",
     CFrameOriginal = "CFrameOriginal",
     EstaAbierta = "EstaAbierta",
+    PuertaBloqueada = "PuertaBloqueada",
     EsPuertaFinal = "EsPuertaFinal",
     NombreItem = "NombreItem",
     DescripcionItem = "DescripcionItem",

@@ -2,31 +2,13 @@ local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ItemDatabase = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemDatabase"))
+local ItemTypes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemTypes"))
+local ItemUtils = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemUtils"))
 
 local EquipmentManager = {}
 
 local function normalizarNombreItem(itemName)
-    if typeof(itemName) ~= "string" then
-        return itemName
-    end
-
-    local limpio = string.match(itemName, "^%s*(.-)%s*$")
-    if limpio == "" then
-        return itemName
-    end
-
-    if ItemDatabase[limpio] then
-        return limpio
-    end
-
-    local lower = string.lower(limpio)
-    for key in pairs(ItemDatabase) do
-        if string.lower(key) == lower then
-            return key
-        end
-    end
-
-    return limpio
+    return ItemUtils.NormalizeItemName(itemName, ItemDatabase)
 end
 
 local function isWeaponItem(itemName)
@@ -35,7 +17,7 @@ local function isWeaponItem(itemName)
         return false
     end
 
-    return itemData.Tipo == "Fuego" or itemData.Tipo == "Melee"
+    return itemData.Tipo == ItemTypes.Firearm or itemData.Tipo == ItemTypes.Melee
 end
 
 local function findToolTemplate(itemName)

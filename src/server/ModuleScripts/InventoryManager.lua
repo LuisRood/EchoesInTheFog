@@ -2,31 +2,18 @@ local InventoryManager = {}
 -- ItemDatabase vive en ReplicatedStorage/Shared/ModuleScripts (src/shared/ModuleScripts)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ItemDatabase = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemDatabase"))
+local ItemTypes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemTypes"))
+local ItemUtils = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemUtils"))
 
 local playerInventories = {} -- Tabla para almacenar los inventarios de cada jugador
+local dynamicItems = {}
 
 local function normalizarNombreItem(itemName)
-    if typeof(itemName) ~= "string" then
-        return itemName
-    end
+    return ItemUtils.NormalizeItemName(itemName, ItemDatabase, dynamicItems)
+end
 
-    local limpio = string.match(itemName, "^%s*(.-)%s*$")
-    if limpio == "" then
-        return itemName
-    end
-
-    if ItemDatabase[limpio] then
-        return limpio
-    end
-
-    local lower = string.lower(limpio)
-    for key in pairs(ItemDatabase) do
-        if string.lower(key) == lower then
-            return key
-        end
-    end
-
-    return limpio
+local function getItemData(itemName)
+    return ItemDatabase[itemName] or dynamicItems[itemName]
 end
 
 -- Función privada (Lazy Initialization)
@@ -55,20 +42,19 @@ function InventoryManager:AddItem(player, itemName, amount, itemDescription)
 
     local inventory = playerInventories[player.UserId]
     local currentAmount = inventory[itemName] or 0
-    local itemData = ItemDatabase[itemName]
+    local itemData = getItemData(itemName)
 
     -- ==========================================
     -- INYECCIÓN DINÁMICA DE OBJETOS CLAVE
     -- ==========================================
     if not itemData then
-        -- Lo registramos en la base de datos en tiempo de ejecución
         itemData = {
-            Tipo = "ObjetoClave",
+            Tipo = ItemTypes.KeyItem,
             MaxStack = 1,
             Descripcion = itemDescription or "Un objeto misterioso." -- Fallback por si olvidas ponerle descripción en Studio
         }
-        -- ¡Magia! Lo guardamos en el diccionario maestro para que la UI lo pueda leer después
-        ItemDatabase[itemName] = itemData
+        -- Nunca mutamos ItemDatabase compartido: los dinámicos viven solo en servidor.
+        dynamicItems[itemName] = itemData
         
         print("[INVENTARIO] Registrado dinámicamente: " .. itemName .. " - " .. itemData.Descripcion)
     end
@@ -153,6 +139,11 @@ function InventoryManager:GetInventory(player)
     end
 
     return limpio
+end
+
+function InventoryManager:GetItemData(itemName)
+    itemName = normalizarNombreItem(itemName)
+    return getItemData(itemName)
 end
 
 return InventoryManager

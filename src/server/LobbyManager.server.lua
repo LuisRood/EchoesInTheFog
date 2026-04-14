@@ -29,6 +29,7 @@ for _, salaModel in ipairs(salasFolder:GetChildren()) do
         activeRooms[salaModel.Name] = {
             Model = salaModel,
             Timer = COUNTDOWN_SECONDS,
+            StartTime = nil,
             State = "Waiting", -- Waiting, Counting, Teleporting
             PlayersInZone = {}
         }
@@ -51,6 +52,7 @@ local function despacharGrupo(roomName, roomData)
         warn("[MATCHMAKING] " .. roomName .. " no tiene Hitbox/HitBox. Teleporte cancelado para esta sala.")
         roomData.State = "Waiting"
         roomData.Timer = COUNTDOWN_SECONDS
+        roomData.StartTime = nil
         roomData.PlayersInZone = {}
         return
     end
@@ -80,6 +82,7 @@ local function despacharGrupo(roomName, roomData)
         -- Reinicio de fábrica para que el siguiente grupo la pueda usar
         roomData.State = "Waiting"
         roomData.Timer = COUNTDOWN_SECONDS
+        roomData.StartTime = nil
         textoUI.TextColor3 = Color3.fromRGB(255, 255, 255)
     end)
 end
@@ -99,6 +102,7 @@ task.spawn(function()
             if not hitbox then
                 roomData.State = "Waiting"
                 roomData.Timer = COUNTDOWN_SECONDS
+                roomData.StartTime = nil
                 roomData.PlayersInZone = {}
                 continue
             end
@@ -132,10 +136,10 @@ task.spawn(function()
                 -- Hay gente adentro, arranca o continúa el reloj
                 if roomData.State == "Waiting" then
                     roomData.State = "Counting"
+                    roomData.StartTime = os.clock()
                 end
-                
-                -- Descontamos el medio segundo de este ciclo
-                roomData.Timer -= 0.5 
+
+                roomData.Timer = math.max(0, COUNTDOWN_SECONDS - (os.clock() - (roomData.StartTime or os.clock())))
 
                 textoUI.Text = numPlayers .. "/" .. MAX_PLAYERS_PER_ROOM .. " - Saliendo en: " .. math.ceil(roomData.Timer) .. "s"
 
@@ -148,6 +152,7 @@ task.spawn(function()
                 if roomData.State == "Counting" then
                     roomData.State = "Waiting"
                     roomData.Timer = COUNTDOWN_SECONDS
+                    roomData.StartTime = nil
                 end
                 
                 textoUI.Text = "0/" .. MAX_PLAYERS_PER_ROOM .. " - Esperando Jugadores"

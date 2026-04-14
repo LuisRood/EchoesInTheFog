@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ItemDatabase = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemDatabase"))
+local ItemTypes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemTypes"))
 
 local CrosshairUIController = {}
 
@@ -10,7 +11,7 @@ local function isFirearmTool(instance)
     end
 
     local data = ItemDatabase[instance.Name]
-    return data and data.Tipo == "Fuego"
+    return data and data.Tipo == ItemTypes.Firearm
 end
 
 local function createCrosshair(hud)

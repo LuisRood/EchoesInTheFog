@@ -1,38 +1,20 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ItemDatabase = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemDatabase"))
+local ItemTypes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemTypes"))
+local ItemUtils = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemUtils"))
 
 local WeaponStateManager = {}
 
 local playerWeaponStates = {}
 
 local function normalizeItemName(itemName)
-    if typeof(itemName) ~= "string" then
-        return itemName
-    end
-
-    local trimmed = string.match(itemName, "^%s*(.-)%s*$")
-    if trimmed == "" then
-        return itemName
-    end
-
-    if ItemDatabase[trimmed] then
-        return trimmed
-    end
-
-    local lower = string.lower(trimmed)
-    for key in pairs(ItemDatabase) do
-        if string.lower(key) == lower then
-            return key
-        end
-    end
-
-    return trimmed
+    return ItemUtils.NormalizeItemName(itemName, ItemDatabase)
 end
 
 local function isFirearm(itemName)
     local data = ItemDatabase[itemName]
-    return data and data.Tipo == "Fuego"
+    return data and data.Tipo == ItemTypes.Firearm
 end
 
 local function getOrCreatePlayerState(player)
@@ -50,7 +32,7 @@ local function getWeaponData(itemName)
         return nil
     end
 
-    if data.Tipo ~= "Fuego" then
+    if data.Tipo ~= ItemTypes.Firearm then
         return nil
     end
 

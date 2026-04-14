@@ -2,26 +2,34 @@ local CameraController = {}
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConstants = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants"))
 
-local cameraYaw = 0 -- Horizontal Axis
-local cameraPitch = 0 --Vertical Axis
+local state = {
+    cameraYaw = 0,
+    cameraPitch = 0,
+    cameraCFrame = workspace.CurrentCamera.CFrame,
+}
 local CAMERA_SENSITIVITY = GameConstants.Client.Camera.Sensitivity
 local CAMERA_LAG = GameConstants.Client.Camera.Lag
-local cameraCFrame = workspace.CurrentCamera.CFrame
 -- Maximum incline 60 degree up and 60 degree down
 local MAX_PITCH = math.rad(GameConstants.Client.Camera.MaxPitchDegrees)
 local MIN_PITCH = math.rad(GameConstants.Client.Camera.MinPitchDegrees)
 local CAMERA_OFFSET = GameConstants.Client.Camera.Offset
 
+function CameraController:Reset()
+    state.cameraYaw = 0
+    state.cameraPitch = 0
+    state.cameraCFrame = workspace.CurrentCamera.CFrame
+end
+
 function CameraController:ProcessMouseMovement(deltaX, deltaY)
-    cameraYaw -= deltaX * CAMERA_SENSITIVITY
-    cameraPitch -= deltaY * CAMERA_SENSITIVITY
+    state.cameraYaw -= deltaX * CAMERA_SENSITIVITY
+    state.cameraPitch -= deltaY * CAMERA_SENSITIVITY
 
     --NO COMPLETLY 360
-    cameraPitch = math.clamp(cameraPitch, MIN_PITCH,MAX_PITCH)
+    state.cameraPitch = math.clamp(state.cameraPitch, MIN_PITCH,MAX_PITCH)
 end
 
 function CameraController:GetYaw()
-    return cameraYaw
+    return state.cameraYaw
 end
 
 function CameraController:Update(hrpPosition)
@@ -29,12 +37,12 @@ function CameraController:Update(hrpPosition)
 
     local desiredCameraCFrame = 
         CFrame.new(hrpPosition) *
-        CFrame.Angles(0, cameraYaw, 0) * -- Horizontal
-        CFrame.Angles(cameraPitch, 0, 0) * -- Vertical
+        CFrame.Angles(0, state.cameraYaw, 0) * -- Horizontal
+        CFrame.Angles(state.cameraPitch, 0, 0) * -- Vertical
         CFrame.new(CAMERA_OFFSET) -- Offset
 
-    cameraCFrame = cameraCFrame:Lerp(desiredCameraCFrame, CAMERA_LAG)
-    camera.CFrame = cameraCFrame
+    state.cameraCFrame = state.cameraCFrame:Lerp(desiredCameraCFrame, CAMERA_LAG)
+    camera.CFrame = state.cameraCFrame
 end
 
 return CameraController

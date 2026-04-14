@@ -26,7 +26,6 @@ local shoulderStrafeRight = false
 local gamepadMoveY = 0
 local gamepadStrafeX = 0
 local gamepadLook = Vector2.zero
-local gamepadDPadUpPrevious = false
 
 local rightLookTouches = {}
 local beganConnection = nil
@@ -79,7 +78,6 @@ local function pollGamepadAxes()
     gamepadMoveY = 0
     gamepadStrafeX = 0
     gamepadLook = Vector2.zero
-    local gamepadDPadUpNow = false
 
     for _, state in ipairs(UserInputService:GetGamepadState(Enum.UserInputType.Gamepad1)) do
         if state.KeyCode == Enum.KeyCode.Thumbstick1 then
@@ -90,15 +88,8 @@ local function pollGamepadAxes()
                 applyDeadzone(state.Position.X),
                 applyDeadzone(state.Position.Y)
             )
-        elseif state.KeyCode == Enum.KeyCode.DPadUp then
-            gamepadDPadUpNow = true
         end
     end
-
-    if gamepadDPadUpNow and not gamepadDPadUpPrevious and flashlightCallback then
-        flashlightCallback()
-    end
-    gamepadDPadUpPrevious = gamepadDPadUpNow
 end
 
 local function onRunAction(_, state)
@@ -205,7 +196,6 @@ function InputController:Init(onFlashlightToggle, onMouseMove, onReload, onFire)
     gamepadMoveY = 0
     gamepadStrafeX = 0
     gamepadLook = Vector2.zero
-    gamepadDPadUpPrevious = false
 
     ContextActionService:UnbindAction(ACTION_RUN)
     ContextActionService:UnbindAction(ACTION_RELOAD)

@@ -10,12 +10,31 @@ local FuncEquiparItem = ReplicatedStorage:WaitForChild("EquiparItem")
 local FuncObtenerEstadoArma = ReplicatedStorage:WaitForChild("ObtenerEstadoArma")
 local FuncRecargarArma = ReplicatedStorage:WaitForChild("RecargarArma")
 local ItemDatabase = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemDatabase"))
+local ItemTypes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemTypes"))
 local GameConstants = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants"))
 
 local ACTION_TOGGLE_INVENTORY = "EITF_ToggleInventory"
 
+local function invokeServerSafe(remote, ...)
+    local packed = table.pack(...)
+    local success, serverOk, serverResult = pcall(function()
+        return remote:InvokeServer(table.unpack(packed, 1, packed.n))
+    end)
+
+    if not success then
+        return false, false, serverOk
+    end
+
+    return true, serverOk, serverResult
+end
+
 local function solicitarEquipar(nombreItem)
-    local ok, mensaje = FuncEquiparItem:InvokeServer(nombreItem)
+    local invokeOk, ok, mensaje = invokeServerSafe(FuncEquiparItem, nombreItem)
+    if not invokeOk then
+        warn("[INVENTARIO] Error al equipar item: " .. tostring(mensaje))
+        return false
+    end
+
     if not ok then
         warn("[INVENTARIO] No se pudo equipar: " .. tostring(mensaje))
         return false
@@ -55,8 +74,8 @@ local function esItemEquipable(infoItem)
     end
 
     local tipo = string.lower(tostring(infoItem.Tipo or ""))
-    return tipo == "fuego"
-        or tipo == "melee"
+    return tipo == string.lower(ItemTypes.Firearm)
+        or tipo == string.lower(ItemTypes.Melee)
         or infoItem.Dano ~= nil
         or infoItem.UsaMunicion ~= nil
         or infoItem.Rango ~= nil
@@ -302,7 +321,7 @@ function InventoryUIController:Init(hud)
         local cantidad = inventarioActual[nombreCanonico] or 1
         local infoItem = ItemDatabase[nombreCanonico] or {Descripcion = "Objeto misterioso."}
         local esEquipable = esItemEquipable(infoItem)
-        local esArmaFuego = string.lower(tostring(infoItem.Tipo or "")) == "fuego"
+        local esArmaFuego = string.lower(tostring(infoItem.Tipo or "")) == string.lower(ItemTypes.Firearm)
 
         tituloDetalle.Text = nombreCanonico .. " (x" .. cantidad .. ")"
         descDetalle.Text = infoItem.Descripcion or "Objeto misterioso."
@@ -315,7 +334,13 @@ function InventoryUIController:Init(hud)
             btnAccion.Text = "EQUIPAR"
 
             if esArmaFuego then
-                local ok, estadoArma = FuncObtenerEstadoArma:InvokeServer(nombreCanonico)
+                local invokeOk, ok, estadoArma = invokeServerSafe(FuncObtenerEstadoArma, nombreCanonico)
+                if not invokeOk then
+                    estadoDetalle.Text = "Error al consultar estado del arma"
+                    btnSecundario.Visible = false
+                    return
+                end
+
                 if ok and estadoArma then
                     estadoDetalle.Text = string.format(
                         "Cargador: %d/%d  |  Reserva (%s): %d",
@@ -385,7 +410,10 @@ function InventoryUIController:Init(hud)
 
         if inventarioAbierto then
             print("[CLIENTE] Solicitando datos del inventario al backend...")
-            inventarioActual = FuncObtenerInventario:InvokeServer() or {}
+            local invokeOk, datos = pcall(function()
+                return FuncObtenerInventario:InvokeServer()
+            end)
+            inventarioActual = (invokeOk and datos) or {}
             renderInventario()
         else
             if GuiService.SelectedObject and GuiService.SelectedObject:IsDescendantOf(menuInventario) then
@@ -432,11 +460,16 @@ function InventoryUIController:Init(hud)
         end
 
         local infoItem = ItemDatabase[itemSeleccionado]
-        if not infoItem or string.lower(tostring(infoItem.Tipo or "")) ~= "fuego" then
+        if not infoItem or string.lower(tostring(infoItem.Tipo or "")) ~= string.lower(ItemTypes.Firearm) then
             return
         end
 
-        local ok, estadoOError = FuncRecargarArma:InvokeServer(itemSeleccionado)
+        local invokeOk, ok, estadoOError = invokeServerSafe(FuncRecargarArma, itemSeleccionado)
+        if not invokeOk then
+            estadoDetalle.Text = "Error al recargar"
+            return
+        end
+
         if not ok then
             estadoDetalle.Text = tostring(estadoOError)
             return

@@ -32,12 +32,13 @@ local ItemAction = require(ActionsFolder:WaitForChild("ItemAction"))
 
 RemoteRegistry:RegisterInventoryEndpoint(InventoryManager)
 RemoteRegistry:RegisterEquipEndpoint(InventoryManager, EquipmentManager, WeaponStateManager)
-RemoteRegistry:RegisterWeaponEndpoints(InventoryManager, WeaponStateManager, WeaponCombatManager)
+RemoteRegistry:RegisterWeaponEndpoints(InventoryManager, WeaponStateManager, WeaponCombatManager, PlayerStateManager)
 print("[BACKEND] Motor de Interacciones del Servidor Iniciado")
 
 Players.PlayerRemoving:Connect(function(player)
     WeaponStateManager:ClearPlayer(player)
     WeaponCombatManager:ClearPlayer(player)
+    RemoteRegistry:ClearPlayer(player)
 end)
 
 local actionContext = {
