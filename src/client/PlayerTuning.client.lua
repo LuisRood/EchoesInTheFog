@@ -19,6 +19,7 @@ local ItemDatabase = require(SharedModules:WaitForChild("ItemDatabase"))
 local FuncRecargarArma = ReplicatedStorage:WaitForChild("RecargarArma")
 local FuncDispararArma = ReplicatedStorage:WaitForChild("DispararArma")
 local FuncObtenerEstadoArma = ReplicatedStorage:WaitForChild("ObtenerEstadoArma")
+local soundsConfig = GameConstants.Client.Sounds
 
 -- REFERENCIAS
 local player = Players.LocalPlayer
@@ -35,8 +36,8 @@ local function createCharacterSound(name, volume, soundId)
     return sound
 end
 
-local gunshot = createCharacterSound("Gunshot", 0.8, "rbxassetid://123448793380050")
-local reloadSound = createCharacterSound("ReloadSound", 0.5, "rbxassetid://139798971373512")
+local gunshot = createCharacterSound("Gunshot", soundsConfig.GunshotVolume, soundsConfig.GunshotSoundId)
+local reloadSound = createCharacterSound("ReloadSound", soundsConfig.ReloadVolume, soundsConfig.ReloadSoundId)
 
 local function ensureSound(soundRef, name, volume, soundId)
     if not soundRef or not soundRef.Parent or soundRef.Parent ~= hrp then
@@ -115,7 +116,7 @@ InputController:Init(
         end
         
         isReloading = true
-        reloadSound = ensureSound(reloadSound, "ReloadSound", 0.5, "rbxassetid://139798971373512")
+        reloadSound = ensureSound(reloadSound, "ReloadSound", soundsConfig.ReloadVolume, soundsConfig.ReloadSoundId)
         reloadSound:Play()
         
         -- Delay de recarga según datos del arma
@@ -152,7 +153,7 @@ InputController:Init(
         end
 
         if ok then
-            gunshot = ensureSound(gunshot, "Gunshot", 0.8, "rbxassetid://123448793380050")
+            gunshot = ensureSound(gunshot, "Gunshot", soundsConfig.GunshotVolume, soundsConfig.GunshotSoundId)
             gunshot:Play()
         else
             warn("[ARMA] No se pudo disparar: " .. tostring(resultado))

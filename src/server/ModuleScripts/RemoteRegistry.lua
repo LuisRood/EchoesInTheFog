@@ -66,13 +66,15 @@ function RemoteRegistry:RegisterWeaponEndpoints(inventoryManager, weaponStateMan
             return false, "No disponible mientras estas abatido"
         end
 
-        if reloadLockByPlayer[player.UserId] then
+        local userId = player.UserId
+
+        if reloadLockByPlayer[userId] then
             return false, "Recarga en progreso"
         end
 
-        reloadLockByPlayer[player.UserId] = true
+        reloadLockByPlayer[userId] = true
         task.delay(reloadDebounce, function()
-            reloadLockByPlayer[player.UserId] = nil
+            reloadLockByPlayer[userId] = nil
         end)
 
         return weaponStateManager:ReloadWeapon(player, weaponName, inventoryManager)

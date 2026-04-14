@@ -17,6 +17,14 @@ local MAX_STRIKES = movementConfig.MaxStrikes or 3
 
 local tracking = {}
 
+local function resetTrackingByUserId(userId)
+    tracking[userId] = {
+        LastPosition = nil,
+        LastTime = os.clock(),
+        Strikes = 0,
+    }
+end
+
 local function getTracking(player)
     local state = tracking[player.UserId]
     if not state then
@@ -31,16 +39,23 @@ local function getTracking(player)
 end
 
 Players.PlayerAdded:Connect(function(player)
-    tracking[player.UserId] = {
-        LastPosition = nil,
-        LastTime = os.clock(),
-        Strikes = 0,
-    }
+    resetTrackingByUserId(player.UserId)
+
+    player.CharacterAdded:Connect(function()
+        resetTrackingByUserId(player.UserId)
+    end)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
     tracking[player.UserId] = nil
 end)
+
+for _, player in ipairs(Players:GetPlayers()) do
+    resetTrackingByUserId(player.UserId)
+    player.CharacterAdded:Connect(function()
+        resetTrackingByUserId(player.UserId)
+    end)
+end
 
 RunService.Heartbeat:Connect(function()
     local now = os.clock()
