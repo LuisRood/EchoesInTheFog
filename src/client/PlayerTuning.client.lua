@@ -13,6 +13,9 @@ local InteractionService = require(CoreModules:WaitForChild("InteractionService"
 local RadioService = require(CoreModules:WaitForChild("RadioService"))
 local UIController = require(CoreModules:WaitForChild("UIController"))
 local InputController = require(CoreModules:WaitForChild("InputController"))
+local SharedModules = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts")
+local GameConstants = require(SharedModules:WaitForChild("GameConstants"))
+local ItemDatabase = require(SharedModules:WaitForChild("ItemDatabase"))
 local FuncRecargarArma = ReplicatedStorage:WaitForChild("RecargarArma")
 local FuncDispararArma = ReplicatedStorage:WaitForChild("DispararArma")
 local FuncObtenerEstadoArma = ReplicatedStorage:WaitForChild("ObtenerEstadoArma")
@@ -115,8 +118,9 @@ InputController:Init(
         reloadSound = ensureSound(reloadSound, "ReloadSound", 0.5, "rbxassetid://139798971373512")
         reloadSound:Play()
         
-        -- Delay de 2 segundos solo para Pistola
-        local reloadTime = equippedWeapon.Name == "Pistola" and 2 or 0
+        -- Delay de recarga según datos del arma
+        local weaponData = ItemDatabase[equippedWeapon.Name]
+        local reloadTime = (weaponData and weaponData.ReloadTimeSeconds) or 0
         
         if reloadTime > 0 then
             task.wait(reloadTime)
