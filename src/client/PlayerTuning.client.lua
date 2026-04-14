@@ -26,7 +26,7 @@ local hrp = character:WaitForChild("HumanoidRootPart")
 -- CREAR SONIDO DE DISPARO
 local gunshot = Instance.new("Sound")
 gunshot.Name = "Gunshot"
-gunshot.Volume = 0.7
+gunshot.Volume = 0.8
 gunshot.SoundId = "rbxassetid://123448793380050" -- Sonido de balazo genérico de Roblox
 gunshot.Parent = hrp
 
