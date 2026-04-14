@@ -4,6 +4,7 @@ local Workspace = game:GetService("Workspace")
 local SharedModules = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts")
 local GameConstants = require(SharedModules:WaitForChild("GameConstants"))
 local ItemDatabase = require(SharedModules:WaitForChild("ItemDatabase"))
+local ItemTypes = require(SharedModules:WaitForChild("ItemTypes"))
 
 local WeaponCombatManager = {}
 
@@ -64,7 +65,7 @@ function WeaponCombatManager:FireWeapon(player, shotOrigin, shotDirection, weapo
     local status = statusOrMessage
     local weaponName = status.WeaponName
     local weaponData = ItemDatabase[weaponName]
-    if not weaponData or weaponData.Tipo ~= "Fuego" then
+    if not weaponData or weaponData.Tipo ~= ItemTypes.Firearm then
         return false, "No hay arma de fuego equipada"
     end
 

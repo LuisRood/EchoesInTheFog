@@ -3,6 +3,7 @@ local workspace = game:GetService("Workspace")
 
 -- Buscamos la carpeta que creaste en Studio
 local checkpointsFolder = workspace:WaitForChild("Checkpoints")
+local checkpointConnections = {}
 
 print("[BACKEND] Gestor de Checkpoints Iniciado")
 
@@ -11,7 +12,7 @@ for _, checkpoint in ipairs(checkpointsFolder:GetChildren()) do
     if checkpoint:IsA("BasePart") then
         
         -- Creamos un Event Listener para cuando algo toque este bloque
-        checkpoint.Touched:Connect(function(hit)
+        local touchedConnection = checkpoint.Touched:Connect(function(hit)
             local character = hit.Parent
             local player = Players:GetPlayerFromCharacter(character)
 
@@ -33,5 +34,23 @@ for _, checkpoint in ipairs(checkpointsFolder:GetChildren()) do
                 end
             end
         end)
+
+        local ancestryConnection = checkpoint.AncestryChanged:Connect(function(_, parent)
+            if parent then
+                return
+            end
+
+            local refs = checkpointConnections[checkpoint]
+            if refs then
+                if refs.touched then refs.touched:Disconnect() end
+                if refs.ancestry then refs.ancestry:Disconnect() end
+                checkpointConnections[checkpoint] = nil
+            end
+        end)
+
+        checkpointConnections[checkpoint] = {
+            touched = touchedConnection,
+            ancestry = ancestryConnection,
+        }
     end
 end

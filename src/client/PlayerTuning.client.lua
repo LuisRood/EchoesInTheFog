@@ -19,6 +19,7 @@ local ItemDatabase = require(SharedModules:WaitForChild("ItemDatabase"))
 local FuncRecargarArma = ReplicatedStorage:WaitForChild("RecargarArma")
 local FuncDispararArma = ReplicatedStorage:WaitForChild("DispararArma")
 local FuncObtenerEstadoArma = ReplicatedStorage:WaitForChild("ObtenerEstadoArma")
+local soundsConfig = GameConstants.Client.Sounds
 
 -- REFERENCIAS
 local player = Players.LocalPlayer
@@ -26,23 +27,44 @@ local character = script.Parent
 local humanoid = character:WaitForChild("Humanoid")
 local hrp = character:WaitForChild("HumanoidRootPart")
 
--- CREAR SONIDO DE DISPARO
-local soundsConfig = GameConstants.Client.Sounds
-local gunshot = Instance.new("Sound")
-gunshot.Name = "Gunshot"
-gunshot.Volume = soundsConfig.GunshotVolume
-gunshot.SoundId = soundsConfig.GunshotSoundId
-gunshot.Parent = hrp
+local function createCharacterSound(name, volume, soundId)
+    local sound = Instance.new("Sound")
+    sound.Name = name
+    sound.Volume = volume
+    sound.SoundId = soundId
+    sound.Parent = hrp
+    return sound
+end
 
--- CREAR SONIDO DE RECARGA
-local reloadSound = Instance.new("Sound")
-reloadSound.Name = "ReloadSound"
-reloadSound.Volume = soundsConfig.ReloadVolume
-reloadSound.SoundId = soundsConfig.ReloadSoundId
-reloadSound.Parent = hrp
+local gunshot = createCharacterSound("Gunshot", soundsConfig.GunshotVolume, soundsConfig.GunshotSoundId)
+local reloadSound = createCharacterSound("ReloadSound", soundsConfig.ReloadVolume, soundsConfig.ReloadSoundId)
+
+local function ensureSound(soundRef, name, volume, soundId)
+    if not soundRef or not soundRef.Parent or soundRef.Parent ~= hrp then
+        if soundRef and soundRef.Parent then
+            soundRef:Destroy()
+        end
+        return createCharacterSound(name, volume, soundId)
+    end
+
+    return soundRef
+end
 
 -- Variables de control de recarga
 local isReloading = false
+
+local function invokeServerSafe(remote, ...)
+    local packed = table.pack(...)
+    local success, serverOk, serverResult = pcall(function()
+        return remote:InvokeServer(table.unpack(packed, 1, packed.n))
+    end)
+
+    if not success then
+        return false, false, serverOk
+    end
+
+    return true, serverOk, serverResult
+end
 
 local function getEquippedWeapon()
 	for _, child in ipairs(character:GetChildren()) do
@@ -58,6 +80,7 @@ humanoid.WalkSpeed = 0
 humanoid.JumpPower = 0
 humanoid.AutoRotate = false
 humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+CameraController:Reset()
 FlashlightService:Init(character) -- Linterna en el pecho
 InteractionService:Init()
 RadioService:Init(character)
@@ -81,13 +104,19 @@ InputController:Init(
         end
         
         -- Verificar si hay munición en inventario
-        local ok, estado = FuncObtenerEstadoArma:InvokeServer(nil)
+        local invokeOk, ok, estado = invokeServerSafe(FuncObtenerEstadoArma, nil)
+        if not invokeOk then
+            warn("[ARMA] Error solicitando estado de arma: " .. tostring(estado))
+            return
+        end
+
         if not ok or not estado or (estado.ReserveAmmo or 0) <= 0 then
             warn("[ARMA] No hay munición para recargar")
             return
         end
         
         isReloading = true
+        reloadSound = ensureSound(reloadSound, "ReloadSound", soundsConfig.ReloadVolume, soundsConfig.ReloadSoundId)
         reloadSound:Play()
         
         -- Delay de recarga según datos del arma
@@ -98,7 +127,13 @@ InputController:Init(
             task.wait(reloadTime)
         end
         
-        local reloadOk, resultado = FuncRecargarArma:InvokeServer(nil)
+        local reloadInvokeOk, reloadOk, resultado = invokeServerSafe(FuncRecargarArma, nil)
+        if not reloadInvokeOk then
+            warn("[ARMA] Error de red en recarga: " .. tostring(resultado))
+            isReloading = false
+            return
+        end
+
         if not reloadOk then
             warn("[ARMA] No se pudo recargar: " .. tostring(resultado))
         end
@@ -111,8 +146,14 @@ InputController:Init(
             return
         end
 
-        local ok, resultado = FuncDispararArma:InvokeServer(camera.CFrame.Position, camera.CFrame.LookVector)
+        local invokeOk, ok, resultado = invokeServerSafe(FuncDispararArma, camera.CFrame.Position, camera.CFrame.LookVector)
+        if not invokeOk then
+            warn("[ARMA] Error al invocar disparo: " .. tostring(resultado))
+            return
+        end
+
         if ok then
+            gunshot = ensureSound(gunshot, "Gunshot", soundsConfig.GunshotVolume, soundsConfig.GunshotSoundId)
             gunshot:Play()
         else
             warn("[ARMA] No se pudo disparar: " .. tostring(resultado))

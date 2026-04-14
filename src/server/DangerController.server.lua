@@ -16,14 +16,18 @@ local aiAccumulator = 0
 -- ==========================================
 local function inicializarAtaque(monstruo)
     local rootPart = monstruo:WaitForChild("HumanoidRootPart")
-    local enEnfriamiento = false -- Evita que te haga daño 60 veces por segundo al tocarte
+    local proximoAtaquePermitido = 0 -- Evita daño repetido en ráfaga.
 
     -- Leemos cuánto daño hace este monstruo desde sus propiedades (Si no tiene, hace 34 por defecto)
     -- 34 significa que te abate al tercer golpe (34 + 34 + 34 = 102)
     local danoDelMonstruo = monstruo:GetAttribute("Dano") or 34
 
     rootPart.Touched:Connect(function(hit)
-        if enEnfriamiento then return end
+        if os.clock() < proximoAtaquePermitido then return end
+
+        if not monstruo.Parent then
+            return
+        end
 
         local character = hit.Parent
         local player = Players:GetPlayerFromCharacter(character)
@@ -35,15 +39,12 @@ local function inicializarAtaque(monstruo)
 
             -- Si te toca, no eres invulnerable y estás sana...
             if not esInvulnerable and estadoActual == "Sano" then
-                enEnfriamiento = true
+                proximoAtaquePermitido = os.clock() + 2
                 print("[PELIGRO] El monstruo alcanzó a " .. player.Name .. "!")
                 
                 -- ¡NUEVO! En lugar de abatirlo de golpe, le mandamos el daño
                 PlayerStateManager:TakeDamage(player, danoDelMonstruo)
 
-                -- Le damos 2 segundos de "cooldown" al monstruo antes de que pueda volver a morder
-                task.wait(2) 
-                enEnfriamiento = false
             end
         end
     end)

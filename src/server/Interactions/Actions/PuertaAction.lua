@@ -2,7 +2,6 @@ local PuertaAction = {}
 
 local function esPuertaFinal(context, prompt, modeloPuerta)
     return prompt.Name == context.PromptActionTypes.PuertaFinal
-        or modeloPuerta.Name == "PuertaFin"
         or modeloPuerta:GetAttribute(context.AttributeNames.EsPuertaFinal) == true
 end
 
@@ -10,6 +9,13 @@ function PuertaAction.Handle(context, prompt, player)
     local panel = prompt.Parent
     local modeloPuerta = panel.Parent
     local bisagra = modeloPuerta:FindFirstChild("Bisagra")
+    local lockAttribute = context.AttributeNames.PuertaBloqueada
+
+    if modeloPuerta:GetAttribute(lockAttribute) then
+        return
+    end
+
+    modeloPuerta:SetAttribute(lockAttribute, true)
 
     local requiereLlave = modeloPuerta:GetAttribute(context.AttributeNames.RequiereLlave)
 
@@ -28,6 +34,7 @@ function PuertaAction.Handle(context, prompt, player)
             prompt.ActionText = "Bloqueada"
             task.wait(context.GameConstants.Door.BlockedWaitSeconds)
             prompt.ActionText = "Abrir"
+            modeloPuerta:SetAttribute(lockAttribute, false)
             return
         else
             print("[SISTEMA] Puerta desbloqueada con: " .. requiereLlave)
@@ -40,7 +47,10 @@ function PuertaAction.Handle(context, prompt, player)
         end
     end
 
-    if not bisagra then return end
+    if not bisagra then
+        modeloPuerta:SetAttribute(lockAttribute, false)
+        return
+    end
 
     prompt.Enabled = false
 
@@ -56,6 +66,7 @@ function PuertaAction.Handle(context, prompt, player)
 
         if esPuertaFinal(context, prompt, modeloPuerta) then
             context.EndgameSequence.Run(context, player, prompt, panel, modeloPuerta)
+            modeloPuerta:SetAttribute(lockAttribute, false)
             return
         end
 
@@ -63,6 +74,7 @@ function PuertaAction.Handle(context, prompt, player)
     end
 
     prompt.Enabled = true
+    modeloPuerta:SetAttribute(lockAttribute, false)
 end
 
 return PuertaAction
