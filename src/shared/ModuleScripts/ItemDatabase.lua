@@ -55,6 +55,7 @@ local ItemDatabase = {
         Dano = 20, 
         Capacidad = 15, 
         UsaMunicion = "BalasPistola", 
+        ReloadTimeSeconds = 2,
         MaxStack = 1, 
         Descripcion = "Pistola estándar. Fiable a media distancia." 
     },
@@ -63,6 +64,7 @@ local ItemDatabase = {
         Dano = 60, 
         Capacidad = 6, 
         UsaMunicion = "CartuchosEscopeta", 
+        ReloadTimeSeconds = 2,
         MaxStack = 1, 
         Descripcion = "Devastadora de cerca, inútil de lejos." 
     },
@@ -71,6 +73,7 @@ local ItemDatabase = {
         Dano = 80, 
         Capacidad = 5, 
         UsaMunicion = "BalasRifle", 
+        ReloadTimeSeconds = 3,
         MaxStack = 1, 
         Descripcion = "Precisión y daño extremo. Munición muy escasa." 
     },
