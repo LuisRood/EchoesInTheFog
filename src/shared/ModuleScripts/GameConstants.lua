@@ -78,12 +78,29 @@ local GameConstants = {
         ReloadDebounceSeconds = 0.2,
     },
     Server = {
+        Logger = {
+            Level = "INFO",
+        },
+        Persistence = {
+            Enabled = true,
+            EnabledInStudio = false,
+            StoreName = "EchoesInTheFog_PlayerData_V1",
+            KeyPrefix = "player_",
+            AutoSaveSeconds = 90,
+        },
+        Lobby = {
+            WaitTimeoutSeconds = 10,
+        },
         MovementValidation = {
             Enabled = true,
             MaxSpeed = 25,
             ToleranceFactor = 2.6,
             GraceDistance = 2,
             MaxStrikes = 3,
+        },
+        AI = {
+            RepathIntervalSeconds = 1,
+            RepathDistanceThreshold = 6,
         },
     },
 }

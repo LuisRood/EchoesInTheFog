@@ -7,13 +7,14 @@ local ItemUtils = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild(
 local WeaponStateManager = {}
 
 local playerWeaponStates = {}
+local itemDatabase = ItemDatabase
 
 local function normalizeItemName(itemName)
-    return ItemUtils.NormalizeItemName(itemName, ItemDatabase)
+    return ItemUtils.NormalizeItemName(itemName, itemDatabase)
 end
 
 local function isFirearm(itemName)
-    local data = ItemDatabase[itemName]
+    local data = itemDatabase[itemName]
     return data and data.Tipo == ItemTypes.Firearm
 end
 
@@ -27,7 +28,7 @@ local function getOrCreatePlayerState(player)
 end
 
 local function getWeaponData(itemName)
-    local data = ItemDatabase[itemName]
+    local data = itemDatabase[itemName]
     if not data then
         return nil
     end
@@ -52,6 +53,15 @@ local function getEquippedWeaponTool(player)
     end
 
     return nil
+end
+
+-- Función privada para verificar si el estado de armas está vacío
+local function isWeaponStateEmpty(state)
+    if not state then return true end
+    for _, _ in pairs(state) do
+        return false
+    end
+    return true
 end
 
 function WeaponStateManager:EnsureWeaponState(player, weaponName)
@@ -182,6 +192,58 @@ end
 
 function WeaponStateManager:ClearPlayer(player)
     playerWeaponStates[player.UserId] = nil
+end
+
+function WeaponStateManager:SetItemDatabase(customDatabase)
+    if typeof(customDatabase) == "table" then
+        itemDatabase = customDatabase
+    end
+end
+
+function WeaponStateManager:GetSnapshot(player)
+    local stateByWeapon = playerWeaponStates[player.UserId] or {}
+    local snapshot = {}
+
+    for weaponName, state in pairs(stateByWeapon) do
+        snapshot[weaponName] = {
+            AmmoInMag = state.AmmoInMag,
+            MagCapacity = state.MagCapacity,
+            AmmoType = state.AmmoType,
+        }
+    end
+
+    return snapshot
+end
+
+function WeaponStateManager:ApplySnapshot(player, snapshot)
+    -- Si el estado está vacío (primera carga), resetear e importar snapshot
+    -- Si ya tiene armas (cambios ocurrieron durante carga de DataStore), hacer merge
+    local userId = player.UserId
+    local currentState = playerWeaponStates[userId]
+    
+    if not currentState or isWeaponStateEmpty(currentState) then
+        playerWeaponStates[userId] = {}
+    end
+    
+    if typeof(snapshot) ~= "table" then
+        return
+    end
+
+    for weaponName, state in pairs(snapshot) do
+        local canonicalName = normalizeItemName(weaponName)
+        local weaponData = getWeaponData(canonicalName)
+        if weaponData and typeof(state) == "table" then
+            -- Merge: si ya existe (cambio durante carga), no sobrescribir
+            -- solo si está vacío (primera carga)
+            if not playerWeaponStates[userId][canonicalName] then
+                playerWeaponStates[userId][canonicalName] = {
+                    AmmoInMag = math.clamp(tonumber(state.AmmoInMag) or (weaponData.Capacidad or 0), 0, weaponData.Capacidad or 0),
+                    MagCapacity = weaponData.Capacidad or 0,
+                    AmmoType = weaponData.UsaMunicion,
+                }
+            end
+        end
+    end
 end
 
 return WeaponStateManager

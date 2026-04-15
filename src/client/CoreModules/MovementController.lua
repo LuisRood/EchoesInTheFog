@@ -1,6 +1,8 @@
 local MovementController = {}
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local GameConstants = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants"))
+local SharedModules = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts")
+local GameConstants = require(SharedModules:WaitForChild("GameConstants"))
+local PlayerStates = require(SharedModules:WaitForChild("PlayerStates"))
 
 local WALK_SPEED = GameConstants.Client.Movement.WalkSpeed
 local RUN_SPEED = GameConstants.Client.Movement.RunSpeed
@@ -14,8 +16,8 @@ local currentSpeed = 0
 
 function MovementController:Update(dt, hrp, moveInput, strafeInput, isRunning, canRun, cameraYaw)
     -- Leemos la maquina de estados del Servidor de revivir 
-    local estadoActual = hrp.Parent:GetAttribute("Estado") or "Sano"
-    if estadoActual == "Abatido" then
+    local playerState = hrp.Parent:GetAttribute("Estado") or PlayerStates.Healthy
+    if playerState == PlayerStates.Downed then
         hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y,0)
         return
     end

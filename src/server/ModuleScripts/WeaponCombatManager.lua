@@ -7,6 +7,7 @@ local ItemDatabase = require(SharedModules:WaitForChild("ItemDatabase"))
 local ItemTypes = require(SharedModules:WaitForChild("ItemTypes"))
 
 local WeaponCombatManager = {}
+local itemDatabase = ItemDatabase
 
 local lastShotByPlayer = {}
 
@@ -64,7 +65,7 @@ function WeaponCombatManager:FireWeapon(player, shotOrigin, shotDirection, weapo
 
     local status = statusOrMessage
     local weaponName = status.WeaponName
-    local weaponData = ItemDatabase[weaponName]
+    local weaponData = itemDatabase[weaponName]
     if not weaponData or weaponData.Tipo ~= ItemTypes.Firearm then
         return false, "No hay arma de fuego equipada"
     end
@@ -112,6 +113,12 @@ end
 
 function WeaponCombatManager:ClearPlayer(player)
     lastShotByPlayer[player.UserId] = nil
+end
+
+function WeaponCombatManager:SetItemDatabase(customDatabase)
+    if typeof(customDatabase) == "table" then
+        itemDatabase = customDatabase
+    end
 end
 
 return WeaponCombatManager

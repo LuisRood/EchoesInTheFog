@@ -3,8 +3,11 @@ local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TeleportService = game:GetService("TeleportService")
 local RunService = game:GetService("RunService")
+local ModuleScripts = script.Parent:WaitForChild("ModuleScripts")
+local Logger = require(ModuleScripts:WaitForChild("Logger"))
+local log = Logger:WithTag("Lobby")
 
-print("[MATCHMAKING] Gestor de Salas Tipo 'Doors/Apeirophobia' Iniciado")
+log:Info("Gestor de salas iniciado")
 
 -- ==========================================
 -- CONFIGURACIÓN DEL SISTEMA
@@ -13,8 +16,28 @@ local MAX_PLAYERS_PER_ROOM = 4
 local COUNTDOWN_SECONDS = 15
 -- PEGA AQUÍ TU ID DEL LUGAR "Capitulo_1"
 local CHAPTER_ONE_PLACE_ID = 73635928808717 
+local lobbyConfig = (((require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants")) or {}).Server or {}).Lobby) or {}
+local WAIT_TIMEOUT = lobbyConfig.WaitTimeoutSeconds or 10
 
-local salasFolder = Workspace:WaitForChild("Lobby"):WaitForChild("Hub_Multijugador"):WaitForChild("SalasDeEspera") -- Contiene Sala_1, Sala_2, ...
+local function getSalasFolder()
+    local lobbyFolder = Workspace:WaitForChild("Lobby", WAIT_TIMEOUT)
+    if not lobbyFolder then
+        return nil
+    end
+
+    local hub = lobbyFolder:WaitForChild("Hub_Multijugador", WAIT_TIMEOUT)
+    if not hub then
+        return nil
+    end
+
+    return hub:WaitForChild("SalasDeEspera", WAIT_TIMEOUT)
+end
+
+local salasFolder = getSalasFolder() -- Contiene Sala_1, Sala_2, ...
+if not salasFolder then
+    log:Warn("No se encontro Workspace/Lobby/Hub_Multijugador/SalasDeEspera. Lobby deshabilitado para esta sesion.")
+    return
+end
 
 local function getRoomHitbox(roomModel)
     return roomModel:FindFirstChild("Hitbox") or roomModel:FindFirstChild("HitBox")
@@ -37,9 +60,9 @@ for _, salaModel in ipairs(salasFolder:GetChildren()) do
 end
 
 if next(activeRooms) == nil then
-    warn("[MATCHMAKING] No se detectaron salas validas en SalasDeEspera. Cada Sala_X debe ser un Model con un hijo Hitbox.")
+    log:Warn("No se detectaron salas validas en SalasDeEspera")
 else
-    print("[MATCHMAKING] Salas detectadas: " .. tostring(#salasFolder:GetChildren()))
+    log:Info("Salas detectadas: " .. tostring(#salasFolder:GetChildren()))
 end
 
 -- ==========================================
@@ -49,7 +72,7 @@ local function despacharGrupo(roomName, roomData)
     roomData.State = "Teleporting"
     local hitbox = getRoomHitbox(roomData.Model)
     if not hitbox then
-        warn("[MATCHMAKING] " .. roomName .. " no tiene Hitbox/HitBox. Teleporte cancelado para esta sala.")
+        log:Warn(roomName .. " no tiene Hitbox/HitBox")
         roomData.State = "Waiting"
         roomData.Timer = COUNTDOWN_SECONDS
         roomData.StartTime = nil
@@ -61,7 +84,7 @@ local function despacharGrupo(roomName, roomData)
     textoUI.Text = "¡INICIANDO VIAJE!"
     textoUI.TextColor3 = Color3.fromRGB(0, 255, 0) -- Verde de éxito
 
-    print("[MATCHMAKING] Cerrando " .. roomName .. " y reservando instancia...")
+    log:Info("Despachando grupo de " .. roomName)
 
     -- Usamos task.spawn para no congelar el bucle principal de las otras salas
     task.spawn(function()
@@ -71,7 +94,7 @@ local function despacharGrupo(roomName, roomData)
         end)
 
         if not success then
-            warn("[ERROR CRÍTICO] " .. roomName .. " falló: " .. tostring(result))
+            log:Error(roomName .. " fallo al teletransportar: " .. tostring(result))
             textoUI.Text = "ERROR DE CONEXIÓN"
             textoUI.TextColor3 = Color3.fromRGB(255, 0, 0)
         end
