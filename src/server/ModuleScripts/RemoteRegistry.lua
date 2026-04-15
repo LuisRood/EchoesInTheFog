@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SharedModules = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts")
 local GameConstants = require(SharedModules:WaitForChild("GameConstants"))
+local PlayerStates = require(SharedModules:WaitForChild("PlayerStates"))
 
 local RemoteRegistry = {}
 local reloadLockByPlayer = {}
@@ -51,7 +52,7 @@ function RemoteRegistry:RegisterWeaponEndpoints(inventoryManager, weaponStateMan
             return true
         end
 
-        return playerStateManager:GetState(player) ~= "Abatido"
+        return playerStateManager:GetState(player) ~= PlayerStates.Downed
     end
 
     getStatus.OnServerInvoke = function(player, weaponName)

@@ -1,5 +1,6 @@
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Logger = require(script.Parent:WaitForChild("ModuleScripts"):WaitForChild("Logger"))
 
 if not RunService:IsStudio() then
     return
@@ -8,6 +9,8 @@ end
 local SharedModules = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts")
 local PromptActionTypes = require(SharedModules:WaitForChild("PromptActionTypes"))
 local AttributeNames = require(SharedModules:WaitForChild("AttributeNames"))
+local PlayerStates = require(SharedModules:WaitForChild("PlayerStates"))
+local log = Logger:WithTag("DevTest")
 
 local ROOT_FOLDER_NAME = "DevTest"
 
@@ -38,7 +41,7 @@ local function createNpcReviveTest(rootFolder)
     model.Name = "CompaneroNPC_Test"
     model.Parent = rootFolder
 
-    model:SetAttribute(AttributeNames.Estado, "Abatido")
+    model:SetAttribute(AttributeNames.Estado, PlayerStates.Downed)
 
     local rootPart = Instance.new("Part")
     rootPart.Name = "HumanoidRootPart"
@@ -71,10 +74,10 @@ local function bootstrapDevTests()
     createPickupTest(rootFolder)
     createNpcReviveTest(rootFolder)
 
-    print("[DEV-TEST] Escena temporal creada en Workspace/" .. ROOT_FOLDER_NAME)
-    print("[DEV-TEST] 1) Prueba RecogerObjeto con 'LlaveAlmacen'.")
-    print("[DEV-TEST] 2) Prueba Revivir sobre 'CompaneroNPC_Test'.")
-    print("[DEV-TEST] Nota: Revivir jugador real requiere 2 jugadores en Local Server.")
+    log:Info("Escena temporal creada en Workspace/" .. ROOT_FOLDER_NAME)
+    log:Info("1) Prueba RecogerObjeto con LlaveAlmacen")
+    log:Info("2) Prueba Revivir sobre CompaneroNPC_Test")
+    log:Info("Nota: Revivir jugador real requiere 2 jugadores en Local Server")
 end
 
 bootstrapDevTests()

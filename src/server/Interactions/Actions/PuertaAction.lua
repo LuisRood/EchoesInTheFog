@@ -6,6 +6,7 @@ local function esPuertaFinal(context, prompt, modeloPuerta)
 end
 
 function PuertaAction.Handle(context, prompt, player)
+    local log = context.Logger and context.Logger:WithTag("Action.Door")
     local panel = prompt.Parent
     local modeloPuerta = panel.Parent
     local bisagra = modeloPuerta:FindFirstChild("Bisagra")
@@ -21,14 +22,11 @@ function PuertaAction.Handle(context, prompt, player)
 
     if requiereLlave and requiereLlave ~= "" then
         if not context.InventoryManager:HasItem(player, requiereLlave) then
-            print("[SISTEMA] Puerta cerrada. Necesitas: " .. requiereLlave)
+            if log then log:Debug("Puerta bloqueada para " .. player.Name .. ": requiere " .. requiereLlave) end
 
             local sonidoBloqueo = panel:FindFirstChild("SonidoBloqueado")
             if sonidoBloqueo then
-                print("¡ÉXITO! Encontré el audio. Intentando reproducir...")
                 sonidoBloqueo:Play()
-            else
-                print("ERROR FATAL: El código buscó en el Panel, pero el SonidoBloqueado no está ahí.")
             end
 
             prompt.ActionText = "Bloqueada"
@@ -37,7 +35,7 @@ function PuertaAction.Handle(context, prompt, player)
             modeloPuerta:SetAttribute(lockAttribute, false)
             return
         else
-            print("[SISTEMA] Puerta desbloqueada con: " .. requiereLlave)
+            if log then log:Debug("Puerta desbloqueada con llave " .. requiereLlave) end
             context.InventoryManager:RemoveItem(player, requiereLlave, 1)
 
             local sonidoDesbloqueo = panel:FindFirstChild("SonidoDesbloqueo")
@@ -57,11 +55,11 @@ function PuertaAction.Handle(context, prompt, player)
     local estaAbierta = modeloPuerta:GetAttribute(context.AttributeNames.EstaAbierta) or false
 
     if estaAbierta then
-        print("[SERVIDOR] " .. player.Name .. " está cerrando la puerta.")
+        if log then log:Debug(player.Name .. " cierra puerta") end
         context.DoorAnimator.CloseDoor(context, panel, modeloPuerta)
         prompt.ActionText = "Abrir"
     else
-        print("[SERVIDOR] " .. player.Name .. " está abriendo la puerta.")
+        if log then log:Debug(player.Name .. " abre puerta") end
         context.DoorAnimator.OpenDoor(context, panel, modeloPuerta)
 
         if esPuertaFinal(context, prompt, modeloPuerta) then

@@ -6,13 +6,14 @@ local ItemTypes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild(
 local ItemUtils = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemUtils"))
 
 local EquipmentManager = {}
+local itemDatabase = ItemDatabase
 
 local function normalizarNombreItem(itemName)
-    return ItemUtils.NormalizeItemName(itemName, ItemDatabase)
+    return ItemUtils.NormalizeItemName(itemName, itemDatabase)
 end
 
 local function isWeaponItem(itemName)
-    local itemData = ItemDatabase[itemName]
+    local itemData = itemDatabase[itemName]
     if not itemData then
         return false
     end
@@ -114,6 +115,12 @@ function EquipmentManager:EquipItem(player, itemName, inventoryManager, weaponSt
     end
 
     return true, "Equipado"
+end
+
+function EquipmentManager:SetItemDatabase(customDatabase)
+    if typeof(customDatabase) == "table" then
+        itemDatabase = customDatabase
+    end
 end
 
 return EquipmentManager

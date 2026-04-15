@@ -1,7 +1,10 @@
 local EndgameSequence = {}
 
 function EndgameSequence.Run(context, player, prompt, panel, modeloPuerta)
-    print("[SERVIDOR] " .. player.Name .. " ha alcanzado la salida. Iniciando secuencia de fin.")
+    local log = context.Logger and context.Logger:WithTag("Endgame")
+    if log then
+        log:Info(player.Name .. " alcanzo la salida")
+    end
 
     context.DoorAnimator.OpenDoor(context, panel, modeloPuerta)
 

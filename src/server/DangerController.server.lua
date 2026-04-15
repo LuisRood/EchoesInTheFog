@@ -1,77 +1,224 @@
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-
+local PathfindingService = game:GetService("PathfindingService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ModuleScripts = script.Parent:WaitForChild("ModuleScripts")
--- ¡NUEVO! Importamos la máquina de estados
 local PlayerStateManager = require(ModuleScripts:WaitForChild("PlayerStateManager"))
+local Logger = require(ModuleScripts:WaitForChild("Logger"))
 
-local carpetaPeligros = workspace:WaitForChild("Peligros")
-local RANGO_VISION = 100 
+local SharedModules = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts")
+local PlayerStates = require(SharedModules:WaitForChild("PlayerStates"))
+local GameConstants = require(SharedModules:WaitForChild("GameConstants"))
+
+local dangersFolder = workspace:WaitForChild("Peligros")
+
+local VISION_RANGE = 100
 local AI_UPDATE_INTERVAL = 0.15
+local CHASE_SPEED = 12
+local PATROL_SPEED = 8
+local HOME_RADIUS = 5
+
+local aiConfig = (((GameConstants or {}).Server or {}).AI) or {}
+local REPATH_INTERVAL = aiConfig.RepathIntervalSeconds or 1
+local REPATH_DISTANCE_THRESHOLD = aiConfig.RepathDistanceThreshold or 6
+
 local aiAccumulator = 0
+local navByMonster = {}
+local log = Logger:WithTag("Danger")
 
--- ==========================================
--- SISTEMA DE ATAQUE (Colisión)
--- ==========================================
-local function inicializarAtaque(monstruo)
-    local rootPart = monstruo:WaitForChild("HumanoidRootPart")
-    local proximoAtaquePermitido = 0 -- Evita daño repetido en ráfaga.
+local function createPath(rootPosition, targetPosition)
+    local path = PathfindingService:CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanJump = true,
+        AgentCanClimb = true,
+    })
 
-    -- Leemos cuánto daño hace este monstruo desde sus propiedades (Si no tiene, hace 34 por defecto)
-    -- 34 significa que te abate al tercer golpe (34 + 34 + 34 = 102)
-    local danoDelMonstruo = monstruo:GetAttribute("Dano") or 34
+    local ok = pcall(function()
+        path:ComputeAsync(rootPosition, targetPosition)
+    end)
+
+    if not ok or path.Status ~= Enum.PathStatus.Success then
+        return nil
+    end
+
+    return path:GetWaypoints()
+end
+
+local function issueMove(navState, humanoid, targetPosition)
+    if not targetPosition then
+        return
+    end
+
+    local lastTarget = navState.CurrentMoveTarget
+    if not lastTarget or (lastTarget - targetPosition).Magnitude > 1 then
+        navState.CurrentMoveTarget = targetPosition
+        humanoid:MoveTo(targetPosition)
+    end
+end
+
+local function ensureNavigationState(monster, humanoid)
+    if navByMonster[monster] then
+        return navByMonster[monster]
+    end
+
+    local state = {
+        Waypoints = nil,
+        WaypointIndex = 2,
+        LastPathBuild = 0,
+        LastTargetPosition = nil,
+        CurrentMoveTarget = nil,
+    }
+
+    state.MoveConnection = humanoid.MoveToFinished:Connect(function(reached)
+        if reached and state.Waypoints then
+            state.WaypointIndex += 1
+        end
+    end)
+
+    navByMonster[monster] = state
+
+    monster.AncestryChanged:Connect(function(_, parent)
+        if parent then
+            return
+        end
+
+        local nav = navByMonster[monster]
+        if nav and nav.MoveConnection then
+            nav.MoveConnection:Disconnect()
+        end
+        navByMonster[monster] = nil
+    end)
+
+    return state
+end
+
+local function shouldRepath(navState, destination)
+    local now = os.clock()
+
+    if not navState.Waypoints or navState.WaypointIndex > #navState.Waypoints then
+        return true
+    end
+
+    if now - navState.LastPathBuild >= REPATH_INTERVAL then
+        return true
+    end
+
+    if not navState.LastTargetPosition then
+        return true
+    end
+
+    return (destination - navState.LastTargetPosition).Magnitude >= REPATH_DISTANCE_THRESHOLD
+end
+
+local function updateNavigation(monster, humanoid, rootPart, destination)
+    local navState = ensureNavigationState(monster, humanoid)
+
+    if shouldRepath(navState, destination) then
+        navState.Waypoints = createPath(rootPart.Position, destination)
+        navState.WaypointIndex = 2
+        navState.LastPathBuild = os.clock()
+        navState.LastTargetPosition = destination
+    end
+
+    local waypoints = navState.Waypoints
+    if waypoints and navState.WaypointIndex <= #waypoints then
+        local nextWaypoint = waypoints[navState.WaypointIndex]
+        if nextWaypoint.Action == Enum.PathWaypointAction.Jump then
+            humanoid.Jump = true
+        end
+        issueMove(navState, humanoid, nextWaypoint.Position)
+        return
+    end
+
+    issueMove(navState, humanoid, destination)
+end
+
+local function findClosestHealthyTarget(monsterRoot)
+    local nearestRoot = nil
+    local nearestDistance = VISION_RANGE
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        local character = player.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local stateByAttribute = character:GetAttribute("Estado") or PlayerStates.Healthy
+            local stateByManager = PlayerStateManager:GetPlayerState(player)
+            if stateByAttribute ~= PlayerStates.Downed and stateByManager == PlayerStates.Healthy then
+                local distance = (hrp.Position - monsterRoot.Position).Magnitude
+                if distance < nearestDistance then
+                    nearestDistance = distance
+                    nearestRoot = hrp
+                end
+            end
+        end
+    end
+
+    return nearestRoot
+end
+
+local function initializeAttack(monster)
+    local rootPart = monster:WaitForChild("HumanoidRootPart")
+    local nextAllowedAttack = 0
+    local damage = monster:GetAttribute("Dano") or 34
 
     rootPart.Touched:Connect(function(hit)
-        if os.clock() < proximoAtaquePermitido then return end
+        if os.clock() < nextAllowedAttack then
+            return
+        end
 
-        if not monstruo.Parent then
+        if not monster.Parent then
             return
         end
 
         local character = hit.Parent
         local player = Players:GetPlayerFromCharacter(character)
+        if not player then
+            return
+        end
 
-        if player then
-            -- Consultamos a la Máquina de Estados
-            local esInvulnerable = character:GetAttribute("Invulnerable")
-            local estadoActual = PlayerStateManager:GetState(player)
-
-            -- Si te toca, no eres invulnerable y estás sana...
-            if not esInvulnerable and estadoActual == "Sano" then
-                proximoAtaquePermitido = os.clock() + 2
-                print("[PELIGRO] El monstruo alcanzó a " .. player.Name .. "!")
-                
-                -- ¡NUEVO! En lugar de abatirlo de golpe, le mandamos el daño
-                PlayerStateManager:TakeDamage(player, danoDelMonstruo)
-
-            end
+        local invulnerable = character:GetAttribute("Invulnerable")
+        local state = PlayerStateManager:GetPlayerState(player)
+        if not invulnerable and state == PlayerStates.Healthy then
+            nextAllowedAttack = os.clock() + 2
+            PlayerStateManager:TakeDamage(player, damage)
+            log:Debug("Monstruo dano a " .. player.Name)
         end
     end)
 end
 
--- Conectamos el sistema de ataque a todos los monstruos de la carpeta
-for _, monstruo in ipairs(carpetaPeligros:GetChildren()) do
-    if monstruo:IsA("Model") and monstruo:FindFirstChild("HumanoidRootPart") then
-        local rootPart = monstruo.HumanoidRootPart
-        
-        -- 1. Guardamos su coordenada original en memoria
-        monstruo:SetAttribute("PosicionOrigen", rootPart.Position)
-        
-        -- 2. ¡CRÍTICO PARA LA IA! Forzamos que el Servidor sea el dueño absoluto de las físicas
-        -- Esto evita que el monstruo se "congele" o entre en hibernación al teletransportarte
-        for _, part in ipairs(monstruo:GetDescendants()) do
-            if part:IsA("BasePart") and part:CanSetNetworkOwnership() then
-                part:SetNetworkOwner(nil)
-            end
-        end
-        inicializarAtaque(monstruo)
+local function initializeMonster(monster)
+    if not monster:IsA("Model") then
+        return
     end
+
+    local humanoid = monster:FindFirstChild("Humanoid")
+    local rootPart = monster:FindFirstChild("HumanoidRootPart")
+    if not humanoid or not rootPart then
+        return
+    end
+
+    monster:SetAttribute("PosicionOrigen", rootPart.Position)
+
+    for _, part in ipairs(monster:GetDescendants()) do
+        if part:IsA("BasePart") and part:CanSetNetworkOwnership() then
+            part:SetNetworkOwner(nil)
+        end
+    end
+
+    initializeAttack(monster)
+    ensureNavigationState(monster, humanoid)
 end
 
--- ==========================================
--- SISTEMA DE NAVEGACIÓN (Persecución)
--- ==========================================
+for _, monster in ipairs(dangersFolder:GetChildren()) do
+    initializeMonster(monster)
+end
+
+dangersFolder.ChildAdded:Connect(function(child)
+    initializeMonster(child)
+end)
+
 RunService.Heartbeat:Connect(function(dt)
     aiAccumulator += dt
     if aiAccumulator < AI_UPDATE_INTERVAL then
@@ -79,58 +226,30 @@ RunService.Heartbeat:Connect(function(dt)
     end
     aiAccumulator = 0
 
-    for _, monstruo in ipairs(carpetaPeligros:GetChildren()) do
-        local humanoid = monstruo:FindFirstChild("Humanoid")
-        local rootPart = monstruo:FindFirstChild("HumanoidRootPart")
-        
-        if humanoid and rootPart then
-            local objetivoHRP = nil
-            local distanciaMinima = RANGO_VISION
+    for _, monster in ipairs(dangersFolder:GetChildren()) do
+        local humanoid = monster:FindFirstChild("Humanoid")
+        local rootPart = monster:FindFirstChild("HumanoidRootPart")
+        if not humanoid or not rootPart then
+            continue
+        end
 
-            for _, player in ipairs(Players:GetPlayers()) do
-                local character = player.Character
-                if character and character:FindFirstChild("HumanoidRootPart") then
-                    local hrp = character.HumanoidRootPart
-                    local distancia = (hrp.Position - rootPart.Position).Magnitude
-                    -- ==========================================
-                    -- ¡EL FIX! Ignorar a los jugadores abatidos
-                    -- ==========================================
-                    local estadoJugador = character:GetAttribute("Estado") or "Sano"
-
-                    if estadoJugador ~= "Abatido" then
-                        if distancia < distanciaMinima then
-                            -- Solo persigue si el jugador NO está abatido (Opcional: para que vaya por los vivos)
-                            if PlayerStateManager:GetState(player) == "Sano" then
-                                distanciaMinima = distancia
-                                objetivoHRP = hrp
-                            end
-                        end
-                    end
-                end
-            end
-
-            -- Evaluamos qué hacer con el objetivo
-            if objetivoHRP then
-                -- MODO PERSECUCIÓN
-                humanoid.WalkSpeed = 12 
-                humanoid:MoveTo(objetivoHRP.Position)
-                -- print("[IA] Te veo. ¡Voy por ti!") -- Descomenta si necesitas depurar
-            else
-                -- MODO PATRULLA / REGRESO
-                humanoid.WalkSpeed = 8 
-                local origen = monstruo:GetAttribute("PosicionOrigen")
-                
-                if origen then
-                    -- Calculamos qué tan lejos está de su casa
-                    local distanciaAlOrigen = (rootPart.Position - origen).Magnitude
-                    
-                    -- Solo le damos la orden de caminar si está a más de 5 metros de su origen.
-                    -- Si ya llegó (distancia < 5), lo dejamos en paz para no romper el Humanoid.
-                    if distanciaAlOrigen > 5 then
-                        humanoid:MoveTo(origen)
-                    else
-                        -- Ya llegó a su casa, detenemos sus piernas por completo
-                        humanoid.WalkSpeed = 0
+        local targetRoot = findClosestHealthyTarget(rootPart)
+        if targetRoot then
+            humanoid.WalkSpeed = CHASE_SPEED
+            updateNavigation(monster, humanoid, rootPart, targetRoot.Position)
+        else
+            local origin = monster:GetAttribute("PosicionOrigen")
+            if typeof(origin) == "Vector3" then
+                local distanceToOrigin = (rootPart.Position - origin).Magnitude
+                if distanceToOrigin > HOME_RADIUS then
+                    humanoid.WalkSpeed = PATROL_SPEED
+                    updateNavigation(monster, humanoid, rootPart, origin)
+                else
+                    humanoid.WalkSpeed = 0
+                    local navState = navByMonster[monster]
+                    if navState then
+                        navState.Waypoints = nil
+                        navState.CurrentMoveTarget = nil
                     end
                 end
             end

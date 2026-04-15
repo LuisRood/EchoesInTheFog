@@ -4,16 +4,19 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ItemDatabase = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemDatabase"))
 local ItemTypes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemTypes"))
 local ItemUtils = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("ItemUtils"))
+local Logger = require(script.Parent:WaitForChild("Logger"))
 
 local playerInventories = {} -- Tabla para almacenar los inventarios de cada jugador
 local dynamicItems = {}
+local log = Logger:WithTag("Inventory")
+local itemDatabase = ItemDatabase
 
 local function normalizarNombreItem(itemName)
-    return ItemUtils.NormalizeItemName(itemName, ItemDatabase, dynamicItems)
+    return ItemUtils.NormalizeItemName(itemName, itemDatabase, dynamicItems)
 end
 
 local function getItemData(itemName)
-    return ItemDatabase[itemName] or dynamicItems[itemName]
+    return itemDatabase[itemName] or dynamicItems[itemName]
 end
 
 -- Función privada (Lazy Initialization)
@@ -24,7 +27,7 @@ local function obtenerOCrearInventario(player)
         inventario = Instance.new("Folder")
         inventario.Name = "Inventario"
         inventario.Parent = player
-        print("[SISTEMA] Carpeta de Inventario creada para " .. player.Name)
+        log:Debug("Carpeta Inventario creada para " .. player.Name)
     end
     return inventario
 end
@@ -56,20 +59,20 @@ function InventoryManager:AddItem(player, itemName, amount, itemDescription)
         -- Nunca mutamos ItemDatabase compartido: los dinámicos viven solo en servidor.
         dynamicItems[itemName] = itemData
         
-        print("[INVENTARIO] Registrado dinámicamente: " .. itemName .. " - " .. itemData.Descripcion)
+        log:Info("Item dinamico registrado: " .. itemName)
     end
 
     -- 2. Validar límite de capacidad
     local limiteGramos = itemData.MaxStack or 99 
     
     if currentAmount + amount > limiteGramos then
-        print("[INVENTARIO] " .. player.Name .. " no puede cargar más " .. itemName .. ". Inventario lleno.")
+        log:Debug(player.Name .. " sin capacidad para " .. itemName)
         return false
     end
 
     -- 3. Si pasa las validaciones, lo agregamos
     inventory[itemName] = currentAmount + amount
-    print("[INVENTARIO] " .. player.Name .. " guardó " .. itemName .. " (" .. inventory[itemName] .. "/" .. limiteGramos .. ")")
+    log:Debug(player.Name .. " guardo " .. itemName .. " (" .. inventory[itemName] .. "/" .. limiteGramos .. ")")
     
     return true
 end
@@ -118,7 +121,7 @@ function InventoryManager:RemoveItem(player, itemName, amount)
             inventory[itemName] = nuevoTotal
         end
 
-        print("[INVENTARIO] " .. player.Name .. " usó " .. amount .. " " .. itemName .. ". Restantes: " .. tostring(inventory[itemName] or 0))
+        log:Debug(player.Name .. " uso " .. amount .. " " .. itemName .. ". Restantes: " .. tostring(inventory[itemName] or 0))
         return true
     end
     
@@ -144,6 +147,40 @@ end
 function InventoryManager:GetItemData(itemName)
     itemName = normalizarNombreItem(itemName)
     return getItemData(itemName)
+end
+
+function InventoryManager:SetItemDatabase(customDatabase)
+    if typeof(customDatabase) == "table" then
+        itemDatabase = customDatabase
+    end
+end
+
+function InventoryManager:GetSnapshot(player)
+    local source = playerInventories[player.UserId] or {}
+    local snapshot = {}
+    for itemName, amount in pairs(source) do
+        if amount and amount > 0 then
+            snapshot[itemName] = amount
+        end
+    end
+    return snapshot
+end
+
+function InventoryManager:ApplySnapshot(player, snapshot)
+    playerInventories[player.UserId] = {}
+    if typeof(snapshot) ~= "table" then
+        return
+    end
+
+    for itemName, amount in pairs(snapshot) do
+        if typeof(itemName) == "string" and typeof(amount) == "number" and amount > 0 then
+            playerInventories[player.UserId][normalizarNombreItem(itemName)] = math.floor(amount)
+        end
+    end
+end
+
+function InventoryManager:ClearPlayer(player)
+    playerInventories[player.UserId] = nil
 end
 
 return InventoryManager

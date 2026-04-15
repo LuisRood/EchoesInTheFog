@@ -7,13 +7,14 @@ local ItemUtils = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild(
 local WeaponStateManager = {}
 
 local playerWeaponStates = {}
+local itemDatabase = ItemDatabase
 
 local function normalizeItemName(itemName)
-    return ItemUtils.NormalizeItemName(itemName, ItemDatabase)
+    return ItemUtils.NormalizeItemName(itemName, itemDatabase)
 end
 
 local function isFirearm(itemName)
-    local data = ItemDatabase[itemName]
+    local data = itemDatabase[itemName]
     return data and data.Tipo == ItemTypes.Firearm
 end
 
@@ -27,7 +28,7 @@ local function getOrCreatePlayerState(player)
 end
 
 local function getWeaponData(itemName)
-    local data = ItemDatabase[itemName]
+    local data = itemDatabase[itemName]
     if not data then
         return nil
     end
@@ -182,6 +183,46 @@ end
 
 function WeaponStateManager:ClearPlayer(player)
     playerWeaponStates[player.UserId] = nil
+end
+
+function WeaponStateManager:SetItemDatabase(customDatabase)
+    if typeof(customDatabase) == "table" then
+        itemDatabase = customDatabase
+    end
+end
+
+function WeaponStateManager:GetSnapshot(player)
+    local stateByWeapon = playerWeaponStates[player.UserId] or {}
+    local snapshot = {}
+
+    for weaponName, state in pairs(stateByWeapon) do
+        snapshot[weaponName] = {
+            AmmoInMag = state.AmmoInMag,
+            MagCapacity = state.MagCapacity,
+            AmmoType = state.AmmoType,
+        }
+    end
+
+    return snapshot
+end
+
+function WeaponStateManager:ApplySnapshot(player, snapshot)
+    playerWeaponStates[player.UserId] = {}
+    if typeof(snapshot) ~= "table" then
+        return
+    end
+
+    for weaponName, state in pairs(snapshot) do
+        local canonicalName = normalizeItemName(weaponName)
+        local weaponData = getWeaponData(canonicalName)
+        if weaponData and typeof(state) == "table" then
+            playerWeaponStates[player.UserId][canonicalName] = {
+                AmmoInMag = math.clamp(tonumber(state.AmmoInMag) or (weaponData.Capacidad or 0), 0, weaponData.Capacidad or 0),
+                MagCapacity = weaponData.Capacidad or 0,
+                AmmoType = weaponData.UsaMunicion,
+            }
+        end
+    end
 end
 
 return WeaponStateManager

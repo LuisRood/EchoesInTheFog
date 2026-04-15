@@ -1,11 +1,14 @@
 local Players = game:GetService("Players")
 local workspace = game:GetService("Workspace")
+local ModuleScripts = script.Parent:WaitForChild("ModuleScripts")
+local Logger = require(ModuleScripts:WaitForChild("Logger"))
 
 -- Buscamos la carpeta que creaste en Studio
 local checkpointsFolder = workspace:WaitForChild("Checkpoints")
 local checkpointConnections = {}
+local log = Logger:WithTag("Checkpoint")
 
-print("[BACKEND] Gestor de Checkpoints Iniciado")
+log:Info("Gestor de checkpoints iniciado")
 
 -- Iteramos sobre todos los bloques dentro de la carpeta
 for _, checkpoint in ipairs(checkpointsFolder:GetChildren()) do
@@ -30,7 +33,8 @@ for _, checkpoint in ipairs(checkpointsFolder:GetChildren()) do
                 -- Al validar que sea diferente, evitamos spamear la memoria.
                 if checkpointActual ~= nuevaPosicion then
                     character:SetAttribute("UltimoCheckpoint", nuevaPosicion)
-                    print("[SISTEMA] Punto de control guardado para " .. player.Name)
+                    player:SetAttribute("UltimoCheckpoint", nuevaPosicion)
+                    log:Debug("Checkpoint guardado para " .. player.Name)
                 end
             end
         end)
