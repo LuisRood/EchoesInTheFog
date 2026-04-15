@@ -1,5 +1,6 @@
 local DataStoreService = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts")
 local GameConstants = require(SharedModules:WaitForChild("GameConstants"))
@@ -9,10 +10,16 @@ local PersistenceService = {}
 
 local log = Logger:WithTag("Persistence")
 local persistenceConfig = (((GameConstants or {}).Server or {}).Persistence) or {}
-local isEnabled = persistenceConfig.Enabled == true
+local enabledInStudio = persistenceConfig.EnabledInStudio == true
+local isStudio = RunService:IsStudio()
+local isEnabled = persistenceConfig.Enabled == true and (not isStudio or enabledInStudio)
 local storeName = persistenceConfig.StoreName or "EchoesInTheFog_PlayerData_V1"
 local keyPrefix = persistenceConfig.KeyPrefix or "player_"
 local dataStore = isEnabled and DataStoreService:GetDataStore(storeName) or nil
+
+if persistenceConfig.Enabled == true and isStudio and not enabledInStudio then
+    log:Info("Persistencia deshabilitada en Studio (EnabledInStudio=false)")
+end
 
 local function getPlayerKey(player)
     return keyPrefix .. tostring(player.UserId)

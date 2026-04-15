@@ -83,9 +83,13 @@ local GameConstants = {
         },
         Persistence = {
             Enabled = true,
+            EnabledInStudio = false,
             StoreName = "EchoesInTheFog_PlayerData_V1",
             KeyPrefix = "player_",
             AutoSaveSeconds = 90,
+        },
+        Lobby = {
+            WaitTimeoutSeconds = 10,
         },
         MovementValidation = {
             Enabled = true,

@@ -57,16 +57,18 @@ local function removeRevivePrompt(character)
 end
 
 function PlayerStateManager:SetPlayerState(player, newState)
-    playerStates[player.UserId] = newState
+    -- Normalizar estado antes de guardar
+    local normalizedState = PlayerStates:Normalize(newState)
+    playerStates[player.UserId] = normalizedState
 
     local character = getCharacter(player)
     if not character then
         return
     end
 
-    character:SetAttribute("Estado", newState)
+    character:SetAttribute("Estado", normalizedState)
 
-    if newState == PlayerStates.Downed then
+    if normalizedState == PlayerStates.Downed then
         ensureRevivePrompt(character)
         log:Info(player.Name .. " cayo abatida")
 
@@ -82,9 +84,12 @@ function PlayerStateManager:SetPlayerState(player, newState)
     BleedoutTimer:Stop(player)
     removeRevivePrompt(character)
 
+    -- Restaurar vida mínima post-revive, respetando VidaMaxima
     local currentHealth = HealthManager:GetCurrentHealth(character)
-    if currentHealth < 30 then
-        character:SetAttribute("VidaActual", 30)
+    local maxHealth = HealthManager:GetMaxHealth(character)
+    local minRestoreHealth = math.min(30, maxHealth)
+    if currentHealth < minRestoreHealth then
+        HealthManager:Heal(character, minRestoreHealth - currentHealth)
     end
 
     character:SetAttribute("Invulnerable", true)
@@ -105,7 +110,12 @@ function PlayerStateManager:SetState(player, newState)
 end
 
 function PlayerStateManager:GetPlayerState(player)
-    return playerStates[player.UserId] or PlayerStates.Healthy
+    local rawState = playerStates[player.UserId]
+    if not rawState then
+        return PlayerStates.Healthy
+    end
+    -- Normalizar estado en caso de que sea legacy o inválido
+    return PlayerStates:Normalize(rawState)
 end
 
 function PlayerStateManager:GetState(player)

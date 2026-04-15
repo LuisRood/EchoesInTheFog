@@ -16,8 +16,28 @@ local MAX_PLAYERS_PER_ROOM = 4
 local COUNTDOWN_SECONDS = 15
 -- PEGA AQUÍ TU ID DEL LUGAR "Capitulo_1"
 local CHAPTER_ONE_PLACE_ID = 73635928808717 
+local lobbyConfig = (((require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants")) or {}).Server or {}).Lobby) or {}
+local WAIT_TIMEOUT = lobbyConfig.WaitTimeoutSeconds or 10
 
-local salasFolder = Workspace:WaitForChild("Lobby"):WaitForChild("Hub_Multijugador"):WaitForChild("SalasDeEspera") -- Contiene Sala_1, Sala_2, ...
+local function getSalasFolder()
+    local lobbyFolder = Workspace:WaitForChild("Lobby", WAIT_TIMEOUT)
+    if not lobbyFolder then
+        return nil
+    end
+
+    local hub = lobbyFolder:WaitForChild("Hub_Multijugador", WAIT_TIMEOUT)
+    if not hub then
+        return nil
+    end
+
+    return hub:WaitForChild("SalasDeEspera", WAIT_TIMEOUT)
+end
+
+local salasFolder = getSalasFolder() -- Contiene Sala_1, Sala_2, ...
+if not salasFolder then
+    log:Warn("No se encontro Workspace/Lobby/Hub_Multijugador/SalasDeEspera. Lobby deshabilitado para esta sesion.")
+    return
+end
 
 local function getRoomHitbox(roomModel)
     return roomModel:FindFirstChild("Hitbox") or roomModel:FindFirstChild("HitBox")

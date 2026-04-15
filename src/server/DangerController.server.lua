@@ -74,6 +74,12 @@ local function ensureNavigationState(monster, humanoid)
     state.MoveConnection = humanoid.MoveToFinished:Connect(function(reached)
         if reached and state.Waypoints then
             state.WaypointIndex += 1
+        else
+            -- Si no llegó al waypoint, invalidar CurrentMoveTarget para forzar nuevo MoveTo en siguiente frame
+            -- También invalida Waypoints para forzar repath en shouldRepath()
+            state.CurrentMoveTarget = nil
+            state.Waypoints = nil
+            state.LastPathBuild = 0 -- Fuerza shouldRepath a devolver true
         end
     end)
 
@@ -144,6 +150,8 @@ local function findClosestHealthyTarget(monsterRoot)
         local hrp = character and character:FindFirstChild("HumanoidRootPart")
         if hrp then
             local stateByAttribute = character:GetAttribute("Estado") or PlayerStates.Healthy
+            -- Normalizar estado del atributo (puede ser legacy)
+            stateByAttribute = PlayerStates:Normalize(stateByAttribute)
             local stateByManager = PlayerStateManager:GetPlayerState(player)
             if stateByAttribute ~= PlayerStates.Downed and stateByManager == PlayerStates.Healthy then
                 local distance = (hrp.Position - monsterRoot.Position).Magnitude

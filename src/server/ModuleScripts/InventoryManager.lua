@@ -19,6 +19,17 @@ local function getItemData(itemName)
     return itemDatabase[itemName] or dynamicItems[itemName]
 end
 
+-- Función privada para verificar si un inventario está vacío
+local function isInventoryEmpty(inventory)
+    if not inventory then return true end
+    for _, amount in pairs(inventory) do
+        if amount and amount > 0 then
+            return false
+        end
+    end
+    return true
+end
+
 -- Función privada (Lazy Initialization)
 local function obtenerOCrearInventario(player)
     local inventario = player:FindFirstChild("Inventario")
@@ -167,14 +178,25 @@ function InventoryManager:GetSnapshot(player)
 end
 
 function InventoryManager:ApplySnapshot(player, snapshot)
-    playerInventories[player.UserId] = {}
+    -- Si el inventario está vacío (primera carga), resetear e importar snapshot
+    -- Si ya tiene items (cambios ocurrieron durante carga de DataStore), hacer merge
+    local userId = player.UserId
+    local currentInventory = playerInventories[userId]
+    
+    if not currentInventory or isInventoryEmpty(currentInventory) then
+        playerInventories[userId] = {}
+    end
+    
     if typeof(snapshot) ~= "table" then
         return
     end
 
     for itemName, amount in pairs(snapshot) do
         if typeof(itemName) == "string" and typeof(amount) == "number" and amount > 0 then
-            playerInventories[player.UserId][normalizarNombreItem(itemName)] = math.floor(amount)
+            local normalized = normalizarNombreItem(itemName)
+            -- Merge: sumar si ya existe, o asignar si es nuevo
+            local current = playerInventories[userId][normalized] or 0
+            playerInventories[userId][normalized] = current + math.floor(amount)
         end
     end
 end

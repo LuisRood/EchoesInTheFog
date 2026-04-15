@@ -55,6 +55,15 @@ local function getEquippedWeaponTool(player)
     return nil
 end
 
+-- Función privada para verificar si el estado de armas está vacío
+local function isWeaponStateEmpty(state)
+    if not state then return true end
+    for _, _ in pairs(state) do
+        return false
+    end
+    return true
+end
+
 function WeaponStateManager:EnsureWeaponState(player, weaponName)
     weaponName = normalizeItemName(weaponName)
     local data = getWeaponData(weaponName)
@@ -207,7 +216,15 @@ function WeaponStateManager:GetSnapshot(player)
 end
 
 function WeaponStateManager:ApplySnapshot(player, snapshot)
-    playerWeaponStates[player.UserId] = {}
+    -- Si el estado está vacío (primera carga), resetear e importar snapshot
+    -- Si ya tiene armas (cambios ocurrieron durante carga de DataStore), hacer merge
+    local userId = player.UserId
+    local currentState = playerWeaponStates[userId]
+    
+    if not currentState or isWeaponStateEmpty(currentState) then
+        playerWeaponStates[userId] = {}
+    end
+    
     if typeof(snapshot) ~= "table" then
         return
     end
@@ -216,11 +233,15 @@ function WeaponStateManager:ApplySnapshot(player, snapshot)
         local canonicalName = normalizeItemName(weaponName)
         local weaponData = getWeaponData(canonicalName)
         if weaponData and typeof(state) == "table" then
-            playerWeaponStates[player.UserId][canonicalName] = {
-                AmmoInMag = math.clamp(tonumber(state.AmmoInMag) or (weaponData.Capacidad or 0), 0, weaponData.Capacidad or 0),
-                MagCapacity = weaponData.Capacidad or 0,
-                AmmoType = weaponData.UsaMunicion,
-            }
+            -- Merge: si ya existe (cambio durante carga), no sobrescribir
+            -- solo si está vacío (primera carga)
+            if not playerWeaponStates[userId][canonicalName] then
+                playerWeaponStates[userId][canonicalName] = {
+                    AmmoInMag = math.clamp(tonumber(state.AmmoInMag) or (weaponData.Capacidad or 0), 0, weaponData.Capacidad or 0),
+                    MagCapacity = weaponData.Capacidad or 0,
+                    AmmoType = weaponData.UsaMunicion,
+                }
+            end
         end
     end
 end

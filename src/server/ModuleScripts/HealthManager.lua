@@ -8,7 +8,12 @@ function HealthManager:InitializeCharacter(character, maxHealth)
 end
 
 function HealthManager:GetCurrentHealth(character)
-    return character:GetAttribute("VidaActual") or 100
+    local current = character:GetAttribute("VidaActual")
+    if current ~= nil then
+        return current
+    end
+    -- Fallback consistente: si VidaActual no existe, usar VidaMaxima o 100
+    return self:GetMaxHealth(character)
 end
 
 function HealthManager:GetMaxHealth(character)
