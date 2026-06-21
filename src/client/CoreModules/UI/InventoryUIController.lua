@@ -464,6 +464,7 @@ function InventoryUIController:Init(hud)
             return
         end
 
+        estadoDetalle.Text = "Recargando..."
         local invokeOk, ok, estadoOError = invokeServerSafe(FuncRecargarArma, itemSeleccionado)
         if not invokeOk then
             estadoDetalle.Text = "Error al recargar"

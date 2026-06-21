@@ -8,6 +8,7 @@ local AttributeNames = {
     NombreItem = "NombreItem",
     DescripcionItem = "DescripcionItem",
     TextoLore = "TextoLore",
+    MovementSanityBypassUntil = "MovementSanityBypassUntil",
 }
 
 return AttributeNames

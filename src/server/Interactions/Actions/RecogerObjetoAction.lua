@@ -4,6 +4,10 @@ local ItemDatabase = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChi
 
 function RecogerObjetoAction.Handle(context, prompt, player)
     local objetoFisico = prompt.Parent
+    if not objetoFisico then
+        return
+    end
+
     local nombreObjeto = objetoFisico:GetAttribute(context.AttributeNames.NombreItem)
     local descripcionObjeto = objetoFisico:GetAttribute(context.AttributeNames.DescripcionItem)
 
@@ -18,7 +22,9 @@ function RecogerObjetoAction.Handle(context, prompt, player)
     else
         prompt.Enabled = false
         task.delay(1.5, function()
-            prompt.Enabled = true
+            if prompt.Parent then
+                prompt.Enabled = true
+            end
         end)
     end
 end

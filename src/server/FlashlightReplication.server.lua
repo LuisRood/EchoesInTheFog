@@ -4,6 +4,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameConstants = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants"))
 
 local REMOTE_NAME = "ToggleFlashlight"
+local TOGGLE_DEBOUNCE_SECONDS = 0.2
+local lastToggleByPlayer = {}
 
 local function getOrCreateToggleRemote()
     local existing = ReplicatedStorage:FindFirstChild(REMOTE_NAME)
@@ -68,9 +70,20 @@ Players.PlayerAdded:Connect(function(player)
     player.CharacterAdded:Connect(onCharacterAdded)
 end)
 
+Players.PlayerRemoving:Connect(function(player)
+    lastToggleByPlayer[player.UserId] = nil
+end)
+
 local toggleRemote = getOrCreateToggleRemote()
 
 toggleRemote.OnServerEvent:Connect(function(player)
+    local now = os.clock()
+    local lastToggle = lastToggleByPlayer[player.UserId] or 0
+    if now - lastToggle < TOGGLE_DEBOUNCE_SECONDS then
+        return
+    end
+    lastToggleByPlayer[player.UserId] = now
+
     local character = player.Character
     if not character then
         return

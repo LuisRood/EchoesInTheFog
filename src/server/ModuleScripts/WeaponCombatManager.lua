@@ -64,6 +64,10 @@ function WeaponCombatManager:FireWeapon(player, shotOrigin, shotDirection, weapo
     end
 
     local status = statusOrMessage
+    if status.IsReloading then
+        return false, "Recarga en progreso"
+    end
+
     local weaponName = status.WeaponName
     local weaponData = itemDatabase[weaponName]
     if not weaponData or weaponData.Tipo ~= ItemTypes.Firearm then

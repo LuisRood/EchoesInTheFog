@@ -49,6 +49,11 @@ end
 -- ¡Actualizamos la función para recibir itemDescription!
 function InventoryManager:AddItem(player, itemName, amount, itemDescription)
     itemName = normalizarNombreItem(itemName)
+    amount = math.floor(tonumber(amount) or 0)
+
+    if typeof(itemName) ~= "string" or itemName == "" or amount <= 0 then
+        return false
+    end
 
     if not playerInventories[player.UserId] then
         playerInventories[player.UserId] = {}
@@ -93,6 +98,9 @@ end
 -- ==========================================
 function InventoryManager:HasItem(player, itemName)
     itemName = normalizarNombreItem(itemName)
+    if typeof(itemName) ~= "string" or itemName == "" then
+        return false
+    end
 
     local inventory = playerInventories[player.UserId]
     if not inventory then return false end
@@ -102,6 +110,9 @@ end
 
 function InventoryManager:GetItemCount(player, itemName)
     itemName = normalizarNombreItem(itemName)
+    if typeof(itemName) ~= "string" or itemName == "" then
+        return 0
+    end
 
     local inventory = playerInventories[player.UserId]
     if not inventory then
@@ -116,6 +127,11 @@ end
 -- ==========================================
 function InventoryManager:RemoveItem(player, itemName, amount)
     itemName = normalizarNombreItem(itemName)
+    amount = math.floor(tonumber(amount) or 0)
+
+    if typeof(itemName) ~= "string" or itemName == "" or amount <= 0 then
+        return false
+    end
 
     local inventory = playerInventories[player.UserId]
     if not inventory then return false end
@@ -157,6 +173,10 @@ end
 
 function InventoryManager:GetItemData(itemName)
     itemName = normalizarNombreItem(itemName)
+    if typeof(itemName) ~= "string" or itemName == "" then
+        return nil
+    end
+
     return getItemData(itemName)
 end
 

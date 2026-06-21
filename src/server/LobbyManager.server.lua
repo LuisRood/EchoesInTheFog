@@ -3,7 +3,10 @@ local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TeleportService = game:GetService("TeleportService")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ModuleScripts = script.Parent:WaitForChild("ModuleScripts")
+local SharedModules = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts")
+local GameConstants = require(SharedModules:WaitForChild("GameConstants"))
 local Logger = require(ModuleScripts:WaitForChild("Logger"))
 local log = Logger:WithTag("Lobby")
 
@@ -12,12 +15,31 @@ log:Info("Gestor de salas iniciado")
 -- ==========================================
 -- CONFIGURACIÓN DEL SISTEMA
 -- ==========================================
-local MAX_PLAYERS_PER_ROOM = 4
-local COUNTDOWN_SECONDS = 15
+local lobbyConfig = (((GameConstants or {}).Server or {}).Lobby) or {}
+local MAX_PLAYERS_PER_ROOM = lobbyConfig.MaxPlayersPerRoom or 4
+local COUNTDOWN_SECONDS = lobbyConfig.CountdownSeconds or 15
 -- PEGA AQUÍ TU ID DEL LUGAR "Capitulo_1"
-local CHAPTER_ONE_PLACE_ID = 73635928808717 
-local lobbyConfig = (((require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("ModuleScripts"):WaitForChild("GameConstants")) or {}).Server or {}).Lobby) or {}
+local CHAPTER_ONE_PLACE_ID = lobbyConfig.ChapterOnePlaceId or 73635928808717
 local WAIT_TIMEOUT = lobbyConfig.WaitTimeoutSeconds or 10
+
+local MapFolder = script.Parent:FindFirstChild("Map")
+local LobbyBuilderModule = MapFolder and MapFolder:FindFirstChild("LobbyBuilder")
+if LobbyBuilderModule then
+    local ok, generated, message = pcall(function()
+        local LobbyBuilder = require(LobbyBuilderModule)
+        return LobbyBuilder.Build(lobbyConfig.Generation, {
+            MaxPlayersPerRoom = MAX_PLAYERS_PER_ROOM,
+        })
+    end)
+
+    if not ok then
+        log:Warn("No se pudo preparar lobby generado: " .. tostring(generated))
+    elseif generated == true then
+        log:Info(tostring(message or "Lobby generado por codigo"))
+    elseif message then
+        log:Info(tostring(message))
+    end
+end
 
 local function getSalasFolder()
     local lobbyFolder = Workspace:WaitForChild("Lobby", WAIT_TIMEOUT)
@@ -41,6 +63,34 @@ end
 
 local function getRoomHitbox(roomModel)
     return roomModel:FindFirstChild("Hitbox") or roomModel:FindFirstChild("HitBox")
+end
+
+local function getRoomStatusLabels(roomModel, hitbox)
+    local labels = {}
+
+    local billboard = hitbox and hitbox:FindFirstChild("BillboardGui")
+    local billboardStatus = billboard and billboard:FindFirstChild("TextoEstado")
+    if billboardStatus and billboardStatus:IsA("TextLabel") then
+        table.insert(labels, billboardStatus)
+    end
+
+    return labels
+end
+
+local function setRoomStatus(roomModel, hitbox, text, color)
+    local labels = getRoomStatusLabels(roomModel, hitbox)
+    if #labels == 0 then
+        return false
+    end
+
+    for _, label in ipairs(labels) do
+        label.Text = text
+        if color then
+            label.TextColor3 = color
+        end
+    end
+
+    return true
 end
 
 -- Diccionario en memoria para rastrear el estado de cada sala independiente
@@ -80,9 +130,14 @@ local function despacharGrupo(roomName, roomData)
         return
     end
 
-    local textoUI = hitbox.BillboardGui.TextoEstado
-    textoUI.Text = "¡INICIANDO VIAJE!"
-    textoUI.TextColor3 = Color3.fromRGB(0, 255, 0) -- Verde de éxito
+    if not setRoomStatus(roomData.Model, hitbox, "INICIANDO VIAJE", Color3.fromRGB(0, 255, 0)) then
+        log:Warn(roomName .. " no tiene TextoEstado")
+        roomData.State = "Waiting"
+        roomData.Timer = COUNTDOWN_SECONDS
+        roomData.StartTime = nil
+        roomData.PlayersInZone = {}
+        return
+    end
 
     log:Info("Despachando grupo de " .. roomName)
 
@@ -95,8 +150,7 @@ local function despacharGrupo(roomName, roomData)
 
         if not success then
             log:Error(roomName .. " fallo al teletransportar: " .. tostring(result))
-            textoUI.Text = "ERROR DE CONEXIÓN"
-            textoUI.TextColor3 = Color3.fromRGB(255, 0, 0)
+            setRoomStatus(roomData.Model, hitbox, "ERROR DE CONEXION", Color3.fromRGB(255, 0, 0))
         end
 
         -- Damos tiempo a que los avatares desaparezcan antes de reiniciar la sala
@@ -106,7 +160,8 @@ local function despacharGrupo(roomName, roomData)
         roomData.State = "Waiting"
         roomData.Timer = COUNTDOWN_SECONDS
         roomData.StartTime = nil
-        textoUI.TextColor3 = Color3.fromRGB(255, 255, 255)
+        roomData.PlayersInZone = {}
+        setRoomStatus(roomData.Model, hitbox, "0/" .. MAX_PLAYERS_PER_ROOM .. " - Esperando", Color3.fromRGB(255, 255, 255))
     end)
 end
 
@@ -130,7 +185,10 @@ task.spawn(function()
                 continue
             end
 
-            local textoUI = hitbox.BillboardGui.TextoEstado
+            local statusLabels = getRoomStatusLabels(roomData.Model, hitbox)
+            if #statusLabels == 0 then
+                continue
+            end
             
             -- Consulta Espacial: ¿Quién está cruzando el volumen 3D?
             local partes = Workspace:GetPartsInPart(hitbox)
@@ -164,7 +222,12 @@ task.spawn(function()
 
                 roomData.Timer = math.max(0, COUNTDOWN_SECONDS - (os.clock() - (roomData.StartTime or os.clock())))
 
-                textoUI.Text = numPlayers .. "/" .. MAX_PLAYERS_PER_ROOM .. " - Saliendo en: " .. math.ceil(roomData.Timer) .. "s"
+                setRoomStatus(
+                    roomData.Model,
+                    hitbox,
+                    numPlayers .. "/" .. MAX_PLAYERS_PER_ROOM .. " - Saliendo en " .. math.ceil(roomData.Timer) .. "s",
+                    Color3.fromRGB(255, 255, 255)
+                )
 
                 -- Condición de disparo: Se acabó el tiempo O la sala se llenó a tope
                 if roomData.Timer <= 0 or numPlayers == MAX_PLAYERS_PER_ROOM then
@@ -178,7 +241,7 @@ task.spawn(function()
                     roomData.StartTime = nil
                 end
                 
-                textoUI.Text = "0/" .. MAX_PLAYERS_PER_ROOM .. " - Esperando Jugadores"
+                setRoomStatus(roomData.Model, hitbox, "0/" .. MAX_PLAYERS_PER_ROOM .. " - Esperando", Color3.fromRGB(255, 255, 255))
             end
         end
         

@@ -1,4 +1,11 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local SharedModules = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts")
+local AttributeNames = require(SharedModules:WaitForChild("AttributeNames"))
+
 local RespawnManager = {}
+
+local SANITY_BYPASS_SECONDS = 1
 
 function RespawnManager:Execute(player)
     local character = player.Character
@@ -13,6 +20,7 @@ function RespawnManager:Execute(player)
 
     local savedCheckpoint = player:GetAttribute("UltimoCheckpoint") or character:GetAttribute("UltimoCheckpoint")
     character:SetAttribute("UltimoCheckpoint", savedCheckpoint)
+    character:SetAttribute(AttributeNames.MovementSanityBypassUntil, os.clock() + SANITY_BYPASS_SECONDS)
 
     if typeof(savedCheckpoint) == "CFrame" then
         rootPart.CFrame = savedCheckpoint

@@ -20,6 +20,10 @@ Proyecto de horror/survival cooperativo en Roblox, inspirado en la tensión ambi
 - Shared: constantes y catálogos en src/shared/ModuleScripts.
 - Interacciones: acciones desacopladas en src/server/Interactions/Actions.
 
+## Documentacion tecnica
+
+- [Analisis tecnico - Iteracion 1](docs/analisis-iteracion-1.md)
+
 ## Seguridad aplicada
 
 - Validación server-side de estado para endpoints de arma.

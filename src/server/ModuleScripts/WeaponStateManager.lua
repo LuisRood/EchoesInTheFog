@@ -14,6 +14,10 @@ local function normalizeItemName(itemName)
 end
 
 local function isFirearm(itemName)
+    if typeof(itemName) ~= "string" or itemName == "" then
+        return false
+    end
+
     local data = itemDatabase[itemName]
     return data and data.Tipo == ItemTypes.Firearm
 end
@@ -28,6 +32,10 @@ local function getOrCreatePlayerState(player)
 end
 
 local function getWeaponData(itemName)
+    if typeof(itemName) ~= "string" or itemName == "" then
+        return nil
+    end
+
     local data = itemDatabase[itemName]
     if not data then
         return nil
@@ -123,6 +131,7 @@ function WeaponStateManager:GetWeaponStatus(player, weaponName, inventoryManager
         MagCapacity = state.MagCapacity,
         AmmoType = state.AmmoType,
         ReserveAmmo = reserve,
+        IsReloading = state.IsReloading == true,
     }
 end
 
@@ -133,6 +142,15 @@ function WeaponStateManager:ReloadWeapon(player, weaponName, inventoryManager)
     end
 
     local status = statusOrMessage
+    local state = self:EnsureWeaponState(player, status.WeaponName)
+    if not state then
+        return false, "El item no es arma de fuego"
+    end
+
+    if state.IsReloading then
+        return false, "Recarga en progreso"
+    end
+
     if status.MagCapacity <= 0 then
         return false, "Arma sin cargador"
     end
@@ -151,14 +169,47 @@ function WeaponStateManager:ReloadWeapon(player, weaponName, inventoryManager)
         return false, "Sin municion en inventario"
     end
 
+    local weaponData = getWeaponData(status.WeaponName)
+    local reloadTime = math.max(tonumber(weaponData and weaponData.ReloadTimeSeconds) or 0, 0)
+    state.IsReloading = true
+
+    if reloadTime > 0 then
+        task.wait(reloadTime)
+    end
+
+    if not player.Parent then
+        state.IsReloading = nil
+        return false, "Jugador no disponible"
+    end
+
+    local refreshedOk, refreshedStatusOrMessage = self:GetWeaponStatus(player, status.WeaponName, inventoryManager)
+    if not refreshedOk then
+        state.IsReloading = nil
+        return false, refreshedStatusOrMessage
+    end
+
+    status = refreshedStatusOrMessage
+    missing = status.MagCapacity - status.AmmoInMag
+    if missing <= 0 then
+        state.IsReloading = nil
+        return false, "Cargador ya completo"
+    end
+
+    reserve = status.ReserveAmmo or 0
+    if reserve <= 0 then
+        state.IsReloading = nil
+        return false, "Sin municion en inventario"
+    end
+
     local toLoad = math.min(missing, reserve)
     local consumed = inventoryManager:RemoveItem(player, status.AmmoType, toLoad)
     if not consumed then
+        state.IsReloading = nil
         return false, "No se pudo consumir municion"
     end
 
-    local state = self:EnsureWeaponState(player, status.WeaponName)
     state.AmmoInMag += toLoad
+    state.IsReloading = nil
 
     local equippedTool = getEquippedWeaponTool(player)
     if equippedTool and equippedTool.Name == status.WeaponName then

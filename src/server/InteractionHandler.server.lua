@@ -13,8 +13,6 @@ local EquipmentManager = require(ModuleScripts:WaitForChild("EquipmentManager"))
 local RemoteRegistry = require(ModuleScripts:WaitForChild("RemoteRegistry"))
 local PersistenceService = require(ModuleScripts:WaitForChild("PersistenceService"))
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local EventShowNotes = ReplicatedStorage:WaitForChild("EventoMostrarNota")
-local EventEndGame = ReplicatedStorage:WaitForChild("EventoFinJuego")
 local SharedModules = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts")
 local PromptActionTypes = require(SharedModules:WaitForChild("PromptActionTypes"))
 local AttributeNames = require(SharedModules:WaitForChild("AttributeNames"))
@@ -28,12 +26,29 @@ local EndgameSequence = require(InteractionsFolder:WaitForChild("EndgameSequence
 local RevivirAction = require(ActionsFolder:WaitForChild("RevivirAction"))
 local PuertaAction = require(ActionsFolder:WaitForChild("PuertaAction"))
 local LeerNotaAction = require(ActionsFolder:WaitForChild("LeerNotaAction"))
-local PuertaFinalAction = require(ActionsFolder:WaitForChild("PuertaFinalAction"))
 local BotiquinAction = require(ActionsFolder:WaitForChild("BotiquinAction"))
 local RecogerObjetoAction = require(ActionsFolder:WaitForChild("RecogerObjetoAction"))
 local ItemAction = require(ActionsFolder:WaitForChild("ItemAction"))
 local log = Logger:WithTag("Interaction")
 local persistenceConfig = (((GameConstants or {}).Server or {}).Persistence) or {}
+
+local function getOrCreateRemoteEvent(name)
+    local existing = ReplicatedStorage:FindFirstChild(name)
+    if existing then
+        if existing:IsA("RemoteEvent") then
+            return existing
+        end
+        error("[REMOTES] Ya existe un objeto con nombre '" .. name .. "' y no es RemoteEvent")
+    end
+
+    local remoteEvent = Instance.new("RemoteEvent")
+    remoteEvent.Name = name
+    remoteEvent.Parent = ReplicatedStorage
+    return remoteEvent
+end
+
+local EventShowNotes = getOrCreateRemoteEvent("EventoMostrarNota")
+local EventEndGame = getOrCreateRemoteEvent("EventoFinJuego")
 
 InventoryManager:SetItemDatabase(ItemDatabase)
 WeaponStateManager:SetItemDatabase(ItemDatabase)
@@ -130,6 +145,7 @@ local actionContexts = {
         GameConstants = GameConstants,
         DoorAnimator = DoorAnimator,
         EndgameSequence = EndgameSequence,
+        EventEndGame = EventEndGame,
     },
     [PromptActionTypes.LeerNota] = {
         Logger = Logger,
@@ -138,7 +154,9 @@ local actionContexts = {
     },
     [PromptActionTypes.PuertaFinal] = {
         Logger = Logger,
+        InventoryManager = InventoryManager,
         TweenService = TweenService,
+        PromptActionTypes = PromptActionTypes,
         EndgameSequence = EndgameSequence,
         DoorAnimator = DoorAnimator,
         EventEndGame = EventEndGame,
@@ -164,7 +182,7 @@ local actionHandlers = {
     [PromptActionTypes.Revivir] = RevivirAction,
     [PromptActionTypes.Puerta] = PuertaAction,
     [PromptActionTypes.LeerNota] = LeerNotaAction,
-    [PromptActionTypes.PuertaFinal] = PuertaFinalAction,
+    [PromptActionTypes.PuertaFinal] = PuertaAction,
     [PromptActionTypes.Botiquin] = BotiquinAction,
     [PromptActionTypes.RecogerObjeto] = RecogerObjetoAction,
     [PromptActionTypes.Item] = ItemAction,

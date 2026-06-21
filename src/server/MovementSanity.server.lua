@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local SharedModules = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts")
 local GameConstants = require(SharedModules:WaitForChild("GameConstants"))
+local AttributeNames = require(SharedModules:WaitForChild("AttributeNames"))
 
 local movementConfig = (GameConstants.Server and GameConstants.Server.MovementValidation) or {}
 if movementConfig.Enabled == false then
@@ -70,6 +71,18 @@ RunService.Heartbeat:Connect(function()
         local state = getTracking(player)
         local currentPos = hrp.Position
         local dt = now - (state.LastTime or now)
+        local bypassUntil = character:GetAttribute(AttributeNames.MovementSanityBypassUntil)
+
+        if typeof(bypassUntil) == "number" then
+            if now < bypassUntil then
+                state.LastPosition = currentPos
+                state.LastTime = now
+                state.Strikes = 0
+                continue
+            end
+
+            character:SetAttribute(AttributeNames.MovementSanityBypassUntil, nil)
+        end
 
         if not state.LastPosition or dt <= 0 then
             state.LastPosition = currentPos

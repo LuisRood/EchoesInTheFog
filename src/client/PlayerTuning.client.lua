@@ -15,7 +15,6 @@ local UIController = require(CoreModules:WaitForChild("UIController"))
 local InputController = require(CoreModules:WaitForChild("InputController"))
 local SharedModules = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("ModuleScripts")
 local GameConstants = require(SharedModules:WaitForChild("GameConstants"))
-local ItemDatabase = require(SharedModules:WaitForChild("ItemDatabase"))
 local FuncRecargarArma = ReplicatedStorage:WaitForChild("RecargarArma")
 local FuncDispararArma = ReplicatedStorage:WaitForChild("DispararArma")
 local FuncObtenerEstadoArma = ReplicatedStorage:WaitForChild("ObtenerEstadoArma")
@@ -118,15 +117,7 @@ InputController:Init(
         isReloading = true
         reloadSound = ensureSound(reloadSound, "ReloadSound", soundsConfig.ReloadVolume, soundsConfig.ReloadSoundId)
         reloadSound:Play()
-        
-        -- Delay de recarga según datos del arma
-        local weaponData = ItemDatabase[equippedWeapon.Name]
-        local reloadTime = (weaponData and weaponData.ReloadTimeSeconds) or 0
-        
-        if reloadTime > 0 then
-            task.wait(reloadTime)
-        end
-        
+
         local reloadInvokeOk, reloadOk, resultado = invokeServerSafe(FuncRecargarArma, nil)
         if not reloadInvokeOk then
             warn("[ARMA] Error de red en recarga: " .. tostring(resultado))
@@ -141,6 +132,10 @@ InputController:Init(
         isReloading = false
     end,
     function()
+        if isReloading then
+            return
+        end
+
         local camera = workspace.CurrentCamera
         if not camera then
             return

@@ -8,7 +8,15 @@ end
 function PuertaAction.Handle(context, prompt, player)
     local log = context.Logger and context.Logger:WithTag("Action.Door")
     local panel = prompt.Parent
+    if not panel then
+        return
+    end
+
     local modeloPuerta = panel.Parent
+    if not modeloPuerta then
+        return
+    end
+
     local bisagra = modeloPuerta:FindFirstChild("Bisagra")
     local lockAttribute = context.AttributeNames.PuertaBloqueada
 

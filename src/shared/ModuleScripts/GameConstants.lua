@@ -90,6 +90,21 @@ local GameConstants = {
         },
         Lobby = {
             WaitTimeoutSeconds = 10,
+            ChapterOnePlaceId = 73635928808717,
+            MaxPlayersPerRoom = 4,
+            CountdownSeconds = 15,
+            Generation = {
+                Enabled = true,
+                ReplaceExisting = true,
+                RoomCount = 4,
+                Origin = Vector3.new(0, 0, 220),
+                DisableExternalSpawnLocations = true,
+            },
+        },
+        Donations = {
+            Enabled = true,
+            StoreName = "EchoesInTheFog_Donations_V1",
+            RefreshSeconds = 120,
         },
         MovementValidation = {
             Enabled = true,

@@ -38,6 +38,7 @@ local reloadCallback
 local fireCallback
 
 local ACTION_RUN = "EITF_Run"
+local ACTION_FLASHLIGHT = "EITF_Flashlight"
 local ACTION_RELOAD = "EITF_Reload"
 local ACTION_FIRE = "EITF_Fire"
 
@@ -198,12 +199,17 @@ function InputController:Init(onFlashlightToggle, onMouseMove, onReload, onFire)
     gamepadLook = Vector2.zero
 
     ContextActionService:UnbindAction(ACTION_RUN)
+    ContextActionService:UnbindAction(ACTION_FLASHLIGHT)
     ContextActionService:UnbindAction(ACTION_RELOAD)
     ContextActionService:UnbindAction(ACTION_FIRE)
 
     ContextActionService:BindAction(ACTION_RUN, onRunAction, true, Enum.KeyCode.ButtonX)
     ContextActionService:SetTitle(ACTION_RUN, "Correr")
     ContextActionService:SetPosition(ACTION_RUN, controlsConfig.MobileButtons.RunPosition)
+
+    ContextActionService:BindAction(ACTION_FLASHLIGHT, onFlashlightAction, true, Enum.KeyCode.DPadUp)
+    ContextActionService:SetTitle(ACTION_FLASHLIGHT, "Luz")
+    ContextActionService:SetPosition(ACTION_FLASHLIGHT, controlsConfig.MobileButtons.FlashlightPosition)
 
     ContextActionService:BindAction(ACTION_RELOAD, onReloadAction, true, Enum.KeyCode.DPadDown)
     ContextActionService:SetTitle(ACTION_RELOAD, "Rec")
@@ -236,16 +242,10 @@ function InputController:Init(onFlashlightToggle, onMouseMove, onReload, onFire)
             shoulderStrafeLeft = true
         elseif input.KeyCode == Enum.KeyCode.ButtonR1 then
             shoulderStrafeRight = true
-        elseif input.KeyCode == Enum.KeyCode.DPadUp and flashlightCallback then
-            flashlightCallback()
-        elseif input.KeyCode == Enum.KeyCode.DPadDown and reloadCallback then
-            reloadCallback()
         elseif input.KeyCode == Enum.KeyCode.F and flashlightCallback then
             flashlightCallback()
         elseif input.KeyCode == Enum.KeyCode.R and reloadCallback then
             reloadCallback()
-        elseif input.KeyCode == Enum.KeyCode.ButtonR2 and fireCallback then
-            fireCallback()
         elseif input.UserInputType == Enum.UserInputType.MouseButton1 and fireCallback then
             fireCallback()
         end

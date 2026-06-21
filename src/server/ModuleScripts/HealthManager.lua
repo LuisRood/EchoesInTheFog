@@ -1,7 +1,8 @@
 local HealthManager = {}
 
 function HealthManager:InitializeCharacter(character, maxHealth)
-    maxHealth = maxHealth or 100
+    maxHealth = tonumber(maxHealth) or 100
+    maxHealth = math.max(maxHealth, 1)
     character:SetAttribute("VidaMaxima", maxHealth)
     character:SetAttribute("VidaActual", maxHealth)
     character:SetAttribute("Invulnerable", false)
@@ -21,6 +22,11 @@ function HealthManager:GetMaxHealth(character)
 end
 
 function HealthManager:ApplyDamage(character, amount)
+    amount = tonumber(amount) or 0
+    if amount <= 0 then
+        return self:GetCurrentHealth(character)
+    end
+
     local currentHealth = self:GetCurrentHealth(character)
     local maxHealth = self:GetMaxHealth(character)
     local updated = math.clamp(currentHealth - amount, 0, maxHealth)
@@ -29,6 +35,11 @@ function HealthManager:ApplyDamage(character, amount)
 end
 
 function HealthManager:Heal(character, amount)
+    amount = tonumber(amount) or 0
+    if amount <= 0 then
+        return self:GetCurrentHealth(character)
+    end
+
     local currentHealth = self:GetCurrentHealth(character)
     local maxHealth = self:GetMaxHealth(character)
     local updated = math.clamp(currentHealth + amount, 0, maxHealth)
